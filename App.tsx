@@ -6,13 +6,14 @@ import MeterReadings from './components/MeterReadings';
 import ConsumptionStats from './components/ConsumptionStats';
 import CalculationSummary from './components/CalculationSummary';
 import BillHistory from './components/BillHistory';
-import { Lightbulb, Database } from 'lucide-react';
+import { Lightbulb, Database, Download } from 'lucide-react';
 
 const App: React.FC = () => {
   const [config, setConfig] = useState<BillConfig>(INITIAL_CONFIG);
   const [mainMeter, setMainMeter] = useState<MeterReading>(INITIAL_MAIN_METER);
   const [meters, setMeters] = useState<MeterReading[]>(INITIAL_METERS);
   const [history, setHistory] = useState<SavedBill[]>([]);
+  const [installPrompt, setInstallPrompt] = useState<any>(null);
 
   // Load history from localStorage on mount
   useEffect(() => {
@@ -25,6 +26,25 @@ const App: React.FC = () => {
       }
     }
   }, []);
+
+  // Listen for PWA install prompt
+  useEffect(() => {
+    const handler = (e: any) => {
+      e.preventDefault();
+      setInstallPrompt(e);
+    };
+    window.addEventListener('beforeinstallprompt', handler);
+    return () => window.removeEventListener('beforeinstallprompt', handler);
+  }, []);
+
+  const handleInstallClick = async () => {
+    if (!installPrompt) return;
+    installPrompt.prompt();
+    const { outcome } = await installPrompt.userChoice;
+    if (outcome === 'accepted') {
+      setInstallPrompt(null);
+    }
+  };
 
   const handleConfigChange = (key: keyof BillConfig, value: string | number) => {
     setConfig(prev => ({ ...prev, [key]: value }));
@@ -142,8 +162,19 @@ const App: React.FC = () => {
             </div>
             <h1 className="text-xl font-bold text-slate-900 tracking-tight">TMSS Bill Splitter</h1>
           </div>
-          <div className="text-sm text-slate-500 font-medium bg-slate-100 sm:bg-transparent px-3 py-1 rounded-full sm:p-0">
-            {config.month} • {formatDate(config.dateGenerated)}
+          
+          <div className="flex items-center gap-3">
+            {installPrompt && (
+              <button
+                onClick={handleInstallClick}
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-900 text-white text-xs font-semibold rounded-full shadow-sm hover:bg-slate-800 transition-all animate-pulse"
+              >
+                <Download className="w-3 h-3" /> Install App
+              </button>
+            )}
+            <div className="text-sm text-slate-500 font-medium bg-slate-100 sm:bg-transparent px-3 py-1 rounded-full sm:p-0">
+              {config.month} • {formatDate(config.dateGenerated)}
+            </div>
           </div>
         </div>
       </header>
