@@ -1,6 +1,20 @@
 import React, { useState } from 'react';
 import { Calculator, Zap, Info, Banknote } from 'lucide-react';
 
+interface SubStep {
+  label: string;
+  text: string;
+  calculation: string;
+  note?: string;
+}
+
+interface LogicStep {
+  title: string;
+  description: string;
+  subSteps: SubStep[];
+  tableHeader?: boolean;
+}
+
 const BillEstimator: React.FC = () => {
   const [mode, setMode] = useState<'forward' | 'reverse'>('forward');
   const [units, setUnits] = useState<number | string>('');
@@ -57,7 +71,7 @@ const BillEstimator: React.FC = () => {
     // Step 1b: Remove Fixed Charges
     const energyCost = taxableBase - (DEMAND_CHARGE + METER_RENT);
 
-    const logicSteps = [];
+    const logicSteps: LogicStep[] = [];
 
     // Section 1
     logicSteps.push({
@@ -80,7 +94,7 @@ const BillEstimator: React.FC = () => {
     let remainingCost = energyCost;
     let totalUnits = 0;
     let previousLimit = 0;
-    const slabSubSteps = [];
+    const slabSubSteps: SubStep[] = [];
     
     if (energyCost > 0) {
       for (let i = 0; i < SLABS.length; i++) {
