@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Calculator, Zap, Info, Banknote, ArrowLeftRight } from 'lucide-react';
+import { Calculator, Zap, Info, Banknote } from 'lucide-react';
 
 const BillEstimator: React.FC = () => {
   const [mode, setMode] = useState<'forward' | 'reverse'>('forward');
@@ -36,7 +36,6 @@ const BillEstimator: React.FC = () => {
       previousLimit = slab.limit;
       if (remainingUnits <= 0) break;
     }
-    // Note: Usage > 400 is strictly ignored in this formula logic as per original implementation.
 
     const totalSubjectToVat = energyCost + DEMAND_CHARGE + METER_RENT;
     const vatAmount = totalSubjectToVat * VAT_RATE;
@@ -51,70 +50,118 @@ const BillEstimator: React.FC = () => {
   };
 
   // --- Reverse Calculation ---
-  const calculateUnits = (bill: number) => {
-    // 1. Reverse VAT
+  const calculateUnitsDetailed = (bill: number) => {
+    // Step 1: Reverse VAT
     const taxableBase = bill / (1 + VAT_RATE);
     
-    // 2. Reverse Fixed Charges
+    // Step 1b: Remove Fixed Charges
     const energyCost = taxableBase - (DEMAND_CHARGE + METER_RENT);
 
-    if (energyCost <= 0) return { totalUnits: 0, steps: [], energyCost: 0, taxableBase };
+    const logicSteps = [];
+
+    // Section 1
+    logicSteps.push({
+        title: "1. ⚙️ Reverse the VAT Calculation",
+        description: "First, you must remove the VAT and Fixed Charges to isolate the VAT-Exclusive Energy Cost, which is the amount directly derived from units.",
+        subSteps: [
+            {
+                label: "Step 1a: Remove VAT to Find the Taxable Base",
+                text: `The Total Bill is the Taxable Base multiplied by (1 + VAT Rate).`,
+                calculation: `${bill.toFixed(2)} / 1.05 = ${taxableBase.toFixed(2)}`
+            },
+            {
+                label: "Step 1b: Remove Fixed Charges to Find Energy Cost",
+                text: `The Total Subject to VAT includes the Fixed Charges. Subtract them to find the energy cost.`,
+                calculation: `${taxableBase.toFixed(2)} - ${(DEMAND_CHARGE + METER_RENT).toFixed(2)} = ${energyCost.toFixed(2)}`
+            }
+        ]
+    });
 
     let remainingCost = energyCost;
     let totalUnits = 0;
     let previousLimit = 0;
-    const steps = [];
+    const slabSubSteps = [];
+    
+    if (energyCost > 0) {
+      for (let i = 0; i < SLABS.length; i++) {
+          const slab = SLABS[i];
+          const slabSize = slab.limit - previousLimit;
+          const maxCostForSlab = slabSize * slab.rate;
+          
+          const stepBase = {
+              slabIndex: i + 1,
+              range: `${previousLimit}-${slab.limit}`,
+              rate: slab.rate,
+              startCost: remainingCost,
+          };
 
-    for (const slab of SLABS) {
-      const slabSize = slab.limit - previousLimit;
-      const maxCostForSlab = slabSize * slab.rate;
-
-      // Check if we can cover this entire slab with remaining money
-      if (remainingCost >= maxCostForSlab) {
-        // Full slab
-        totalUnits += slabSize;
-        remainingCost -= maxCostForSlab;
-        steps.push({
-          slab: `${previousLimit + 1}-${slab.limit}`,
-          rate: slab.rate,
-          cost: maxCostForSlab,
-          units: slabSize,
-          full: true
-        });
-      } else {
-        // Partial slab
-        const unitsInSlab = remainingCost / slab.rate;
-        totalUnits += unitsInSlab;
-        steps.push({
-          slab: `${previousLimit + 1}-${slab.limit}`,
-          rate: slab.rate,
-          cost: remainingCost,
-          units: unitsInSlab,
-          full: false
-        });
-        remainingCost = 0;
-        break; // Done
+          if (remainingCost >= maxCostForSlab) {
+              // Full slab
+              totalUnits += slabSize;
+              remainingCost -= maxCostForSlab;
+              
+              slabSubSteps.push({
+                  label: `Step 2${String.fromCharCode(97 + i)}: Test Slab ${stepBase.slabIndex}`,
+                  text: `Subtract the cost of the full slab from your Energy Cost.`,
+                  calculation: `${stepBase.startCost.toFixed(2)} - ${maxCostForSlab.toFixed(2)} = ${remainingCost.toFixed(2)}`,
+                  note: `Since remaining cost (${remainingCost.toFixed(2)}) is > 0, consumption is over ${slab.limit} units.`
+              });
+          } else {
+              // Partial slab
+              const unitsInSlab = remainingCost / slab.rate;
+              totalUnits += unitsInSlab;
+              
+              slabSubSteps.push({
+                  label: `Step 2${String.fromCharCode(97 + i)}: Calculate Units in Final Slab (Slab ${stepBase.slabIndex})`,
+                  text: `The remaining cost (${stepBase.startCost.toFixed(2)}) must be in the current slab (Rate: ${slab.rate}). Divide cost by rate.`,
+                  calculation: `${stepBase.startCost.toFixed(2)} / ${slab.rate} = ${unitsInSlab.toFixed(2)} units`
+              });
+              
+              remainingCost = 0;
+              break;
+          }
+          previousLimit = slab.limit;
       }
-      previousLimit = slab.limit;
+      
+      // Handle overflow (>400 units)
+      if (remainingCost > 0.01) {
+           const lastRate = SLABS[SLABS.length - 1].rate;
+           const extraUnits = remainingCost / lastRate;
+           totalUnits += extraUnits;
+           slabSubSteps.push({
+              label: `Step 2+: Above Slab Limit`,
+              text: `Remaining cost attributed to highest rate (${lastRate}).`,
+              calculation: `${remainingCost.toFixed(2)} / ${lastRate} = ${extraUnits.toFixed(2)} units`
+           });
+      }
+    } else {
+        slabSubSteps.push({
+            label: "No Usage",
+            text: "Energy cost is zero or negative, meaning the bill only covers fixed charges or is invalid.",
+            calculation: "0 units"
+        });
     }
 
-    // Handle overflow (>400 units)
-    // If there is still money left, it means the usage is higher than the top slab defined (400).
-    // We'll assume the rate continues at the highest known rate (8.02) to give a useful estimate.
-    if (remainingCost > 0.01) {
-       const lastRate = SLABS[SLABS.length - 1].rate;
-       const extraUnits = remainingCost / lastRate;
-       totalUnits += extraUnits;
-       steps.push({
-          slab: `400+`,
-          rate: lastRate,
-          cost: remainingCost,
-          units: extraUnits,
-          full: false
-       });
-    }
+    // Section 2
+    logicSteps.push({
+        title: "2. ⚡ Reverse the Tiered Rate Calculation (The Hard Part)",
+        description: "Now you know the VAT-Exclusive Energy Cost is " + energyCost.toFixed(2) + ". You must now figure out how many units generated this cost, working backward through the slabs.",
+        tableHeader: true,
+        subSteps: slabSubSteps
+    });
+    
+    // Section 3
+    logicSteps.push({
+        title: "3. Calculate Total Unit Consumption",
+        description: "Sum the units used in all the completed slabs and the units calculated for the final slab.",
+        subSteps: [{
+            label: "Final Sum",
+            text: `Total Units calculated across steps.`,
+            calculation: `= ${totalUnits.toFixed(2)} kWh`
+        }]
+    });
 
-    return { totalUnits, steps, energyCost, taxableBase };
+    return { totalUnits, logicSteps, energyCost, taxableBase };
   };
 
   const handleFocus = (e: React.FocusEvent<HTMLInputElement>) => {
@@ -122,7 +169,7 @@ const BillEstimator: React.FC = () => {
   };
 
   const forwardResult = calculateBill(typeof units === 'number' ? units : 0);
-  const reverseResult = calculateUnits(typeof targetBill === 'number' ? targetBill : 0);
+  const reverseResult = calculateUnitsDetailed(typeof targetBill === 'number' ? targetBill : 0);
 
   return (
     <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 print-break-inside-avoid no-print">
@@ -239,11 +286,20 @@ const BillEstimator: React.FC = () => {
                 value={targetBill}
                 onChange={(e) => setTargetBill(e.target.value === '' ? '' : parseFloat(e.target.value))}
                 onFocus={handleFocus}
-                placeholder="e.g. 1500"
+                placeholder="e.g. 1497.77"
                 className="w-full rounded-lg border-slate-200 focus:border-indigo-500 focus:ring-indigo-500 text-lg font-bold text-slate-900 pr-12"
               />
               <span className="absolute right-4 top-3 text-sm text-slate-400 font-medium pointer-events-none">BDT</span>
             </div>
+          </div>
+
+          {/* Intro Text */}
+          <div className="bg-slate-50 p-4 rounded-lg border border-slate-200 text-sm text-slate-600 space-y-2">
+            <p className="font-medium text-slate-800">estimated unit uses</p>
+            <p>
+              This is one of the most complex reverse calculations in utility billing because you are dealing with tiered rates.
+              When you know the total bill and need to find the units, you must reverse every step we just performed. This calculation cannot be done with a single formula; it requires a systematic, step-by-step reversal, often involving trial and error or iteration, because the rate per unit depends on the unknown total number of units.
+            </p>
           </div>
 
           {(typeof targetBill === 'number' && targetBill > 0) ? (
@@ -256,69 +312,66 @@ const BillEstimator: React.FC = () => {
                   </div>
                </div>
 
-               {/* Breakdown */}
-               <div className="space-y-4">
-                 <h4 className="text-sm font-bold text-slate-800 border-b border-slate-100 pb-2">Calculation Process</h4>
-                 
-                 <div className="relative pl-4 space-y-4 border-l-2 border-indigo-100">
-                    {/* Step 1 */}
-                    <div className="space-y-1">
-                       <span className="flex items-center gap-2 text-xs font-bold text-indigo-600 uppercase">
-                          Step 1: Reverse VAT
-                       </span>
-                       <p className="text-sm text-slate-600">
-                          We divide the total ({targetBill}) by 1.05 to remove the 5% VAT.
-                       </p>
-                       <div className="bg-slate-50 p-2 rounded border border-slate-200 text-sm font-mono text-slate-700">
-                          {targetBill} ÷ 1.05 = {reverseResult.taxableBase.toFixed(2)}
-                       </div>
-                    </div>
-
-                    {/* Step 2 */}
-                    <div className="space-y-1">
-                       <span className="flex items-center gap-2 text-xs font-bold text-indigo-600 uppercase">
-                          Step 2: Reverse Fixed Costs
-                       </span>
-                       <p className="text-sm text-slate-600">
-                          Subtract Demand Charge ({DEMAND_CHARGE}) and Meter Rent ({METER_RENT}).
-                       </p>
-                       <div className="bg-slate-50 p-2 rounded border border-slate-200 text-sm font-mono text-slate-700">
-                          {reverseResult.taxableBase.toFixed(2)} - {DEMAND_CHARGE + METER_RENT} = {reverseResult.energyCost.toFixed(2)}
-                       </div>
-                    </div>
-
-                    {/* Step 3 */}
-                    <div className="space-y-1">
-                       <span className="flex items-center gap-2 text-xs font-bold text-indigo-600 uppercase">
-                          Step 3: Reverse Slabs
-                       </span>
-                       <p className="text-sm text-slate-600">
-                          Calculate units from the remaining energy cost ({reverseResult.energyCost.toFixed(2)}) based on tiered rates.
-                       </p>
-                       <div className="bg-slate-50 rounded border border-slate-200 text-xs overflow-hidden">
-                          <table className="w-full text-left">
+               {/* Breakdown Steps */}
+               <div className="space-y-6">
+                 {reverseResult.logicSteps.map((step, idx) => (
+                    <div key={idx} className="space-y-3">
+                       <h4 className="text-sm font-bold text-slate-900 border-b border-slate-200 pb-2">{step.title}</h4>
+                       <p className="text-xs text-slate-500 italic">{step.description}</p>
+                       
+                       {/* Optional Table Header for Slabs section */}
+                       {step.tableHeader && (
+                         <div className="overflow-x-auto mb-2">
+                           <table className="w-full text-xs text-left">
                              <thead className="bg-slate-100 text-slate-500">
-                                <tr>
-                                   <th className="p-2 font-medium">Range</th>
-                                   <th className="p-2 font-medium text-right">Rate</th>
-                                   <th className="p-2 font-medium text-right">Cost Used</th>
-                                   <th className="p-2 font-medium text-right">Units</th>
-                                </tr>
+                               <tr>
+                                 <th className="p-2">Slab Range</th>
+                                 <th className="p-2">Units in Slab</th>
+                                 <th className="p-2">Rate</th>
+                                 <th className="p-2">Cost for Full Slab</th>
+                               </tr>
                              </thead>
-                             <tbody className="divide-y divide-slate-100">
-                                {reverseResult.steps.map((step, i) => (
+                             <tbody className="divide-y divide-slate-100 text-slate-700">
+                               {SLABS.map((s, i) => {
+                                 const prev = i === 0 ? 0 : SLABS[i-1].limit;
+                                 const size = s.limit - prev;
+                                 const cost = size * s.rate;
+                                 return (
                                    <tr key={i}>
-                                      <td className="p-2 text-slate-700">{step.slab}</td>
-                                      <td className="p-2 text-right text-slate-500">{step.rate}</td>
-                                      <td className="p-2 text-right text-slate-500">{step.cost.toFixed(2)}</td>
-                                      <td className="p-2 text-right font-bold text-indigo-700">{step.units.toFixed(2)}</td>
+                                     <td className="p-2">{i+1} ({prev}-{s.limit})</td>
+                                     <td className="p-2">{size}</td>
+                                     <td className="p-2">{s.rate}</td>
+                                     <td className="p-2">{cost.toFixed(2)}</td>
                                    </tr>
-                                ))}
+                                 )
+                               })}
                              </tbody>
-                          </table>
+                           </table>
+                         </div>
+                       )}
+
+                       <div className="space-y-3 pl-2 border-l-2 border-indigo-100">
+                          {step.subSteps.map((sub, sIdx) => (
+                             <div key={sIdx} className="bg-white p-3 rounded-lg border border-slate-100 shadow-sm">
+                                <div className="text-xs font-bold text-indigo-700 mb-1">{sub.label}</div>
+                                <div className="text-sm text-slate-700 mb-2">{sub.text}</div>
+                                <div className="bg-slate-50 p-2 rounded text-xs font-mono text-slate-600 border border-slate-200">
+                                   {sub.calculation}
+                                </div>
+                                {sub.note && (
+                                   <div className="mt-2 text-xs text-orange-600 font-medium bg-orange-50 p-1.5 rounded">
+                                      {sub.note}
+                                   </div>
+                                )}
+                             </div>
+                          ))}
                        </div>
                     </div>
-                 </div>
+                 ))}
+               </div>
+               
+               <div className="bg-green-50 p-3 rounded-md border border-green-100 text-xs text-green-800 font-medium">
+                  Key Takeaway: If the price system uses tiered rates, you must reverse the fixed and VAT charges first, then work backward through the tiers to find which slab the final consumption fell into.
                </div>
             </>
           ) : (
