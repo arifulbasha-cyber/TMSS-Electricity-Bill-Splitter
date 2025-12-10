@@ -1,6 +1,8 @@
+
 import React, { useState } from 'react';
 import { Calculator, Zap, Info, Banknote } from 'lucide-react';
 import { useLanguage } from '../i18n';
+import { TariffConfig } from '../types';
 
 interface SubStep {
   label: string;
@@ -16,24 +18,21 @@ interface LogicStep {
   tableHeader?: boolean;
 }
 
-const BillEstimator: React.FC = () => {
+interface BillEstimatorProps {
+    tariffConfig: TariffConfig;
+}
+
+const BillEstimator: React.FC<BillEstimatorProps> = ({ tariffConfig }) => {
   const { t } = useLanguage();
   const [mode, setMode] = useState<'forward' | 'reverse'>('forward');
   const [units, setUnits] = useState<number | string>('');
   const [targetBill, setTargetBill] = useState<number | string>('');
 
-  // Constants
-  const DEMAND_CHARGE = 84;
-  const METER_RENT = 10;
-  const VAT_RATE = 0.05; // 5%
-
-  // Slabs configuration
-  const SLABS = [
-    { limit: 75, rate: 5.26 },
-    { limit: 200, rate: 7.20 },
-    { limit: 300, rate: 7.59 },
-    { limit: 400, rate: 8.02 },
-  ];
+  // Use Dynamic Config
+  const DEMAND_CHARGE = tariffConfig.demandCharge;
+  const METER_RENT = tariffConfig.meterRent;
+  const VAT_RATE = tariffConfig.vatRate;
+  const SLABS = tariffConfig.slabs;
 
   // --- Forward Calculation ---
   const calculateBill = (u: number) => {
@@ -53,6 +52,11 @@ const BillEstimator: React.FC = () => {
       if (remainingUnits <= 0) break;
     }
 
+    if (remainingUnits > 0 && SLABS.length > 0) {
+        const lastRate = SLABS[SLABS.length - 1].rate;
+        energyCost += remainingUnits * lastRate;
+    }
+
     const totalSubjectToVat = energyCost + DEMAND_CHARGE + METER_RENT;
     const vatAmount = totalSubjectToVat * VAT_RATE;
     const totalPayable = totalSubjectToVat + vatAmount;
@@ -67,17 +71,13 @@ const BillEstimator: React.FC = () => {
 
   // --- Reverse Calculation ---
   const calculateUnitsDetailed = (bill: number) => {
-    // Step 1: Reverse VAT
-    // Formula provided: VAT Amount = Total Bill * VAT Rate / (1 + VAT Rate)
     const vatAmount = (bill * VAT_RATE) / (1 + VAT_RATE);
     const taxableBase = bill - vatAmount;
     
-    // Step 1b: Remove Fixed Charges
     const energyCost = taxableBase - (DEMAND_CHARGE + METER_RENT);
 
     const logicSteps: LogicStep[] = [];
 
-    // Section 1
     logicSteps.push({
         title: t('step1_title'),
         description: t('step1_desc'),
@@ -114,7 +114,6 @@ const BillEstimator: React.FC = () => {
           };
 
           if (remainingCost >= maxCostForSlab) {
-              // Full slab
               totalUnits += slabSize;
               remainingCost -= maxCostForSlab;
               
@@ -125,7 +124,6 @@ const BillEstimator: React.FC = () => {
                   note: `Since remaining cost (${remainingCost.toFixed(2)}) is > 0, consumption is over ${slab.limit} units.`
               });
           } else {
-              // Partial slab
               const unitsInSlab = remainingCost / slab.rate;
               totalUnits += unitsInSlab;
               
@@ -141,8 +139,7 @@ const BillEstimator: React.FC = () => {
           previousLimit = slab.limit;
       }
       
-      // Handle overflow (>400 units)
-      if (remainingCost > 0.01) {
+      if (remainingCost > 0.01 && SLABS.length > 0) {
            const lastRate = SLABS[SLABS.length - 1].rate;
            const extraUnits = remainingCost / lastRate;
            totalUnits += extraUnits;
@@ -160,7 +157,6 @@ const BillEstimator: React.FC = () => {
         });
     }
 
-    // Section 2
     logicSteps.push({
         title: t('step2_title'),
         description: t('step2_desc'),
@@ -168,7 +164,6 @@ const BillEstimator: React.FC = () => {
         subSteps: slabSubSteps
     });
     
-    // Section 3
     logicSteps.push({
         title: t('step3_title'),
         description: t('step3_desc'),
@@ -190,19 +185,19 @@ const BillEstimator: React.FC = () => {
   const reverseResult = calculateUnitsDetailed(typeof targetBill === 'number' ? targetBill : 0);
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 print-break-inside-avoid no-print">
-      <div className="flex items-center justify-between mb-6 border-b border-slate-100 pb-4">
+    <div className="bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-slate-200 dark:border-slate-800 p-6 print-break-inside-avoid no-print transition-colors duration-200">
+      <div className="flex items-center justify-between mb-6 border-b border-slate-100 dark:border-slate-800 pb-4">
         <div className="flex items-center gap-2">
-          <Calculator className="w-5 h-5 text-indigo-600" />
-          <h2 className="text-lg font-semibold text-slate-800">{t('bill_estimator')}</h2>
+          <Calculator className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+          <h2 className="text-lg font-semibold text-slate-800 dark:text-slate-100">{t('bill_estimator')}</h2>
         </div>
-        <div className="flex bg-slate-100 p-1 rounded-lg shrink-0">
+        <div className="flex bg-slate-100 dark:bg-slate-800 p-1 rounded-lg shrink-0">
           <button
             onClick={() => setMode('forward')}
             className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all flex items-center gap-1 ${
               mode === 'forward' 
-                ? 'bg-white text-indigo-600 shadow-sm' 
-                : 'text-slate-500 hover:text-slate-700'
+                ? 'bg-white dark:bg-slate-600 text-indigo-600 dark:text-indigo-300 shadow-sm' 
+                : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
             }`}
           >
             <Zap className="w-3 h-3" />
@@ -213,8 +208,8 @@ const BillEstimator: React.FC = () => {
             onClick={() => setMode('reverse')}
             className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all flex items-center gap-1 ${
               mode === 'reverse' 
-                ? 'bg-white text-indigo-600 shadow-sm' 
-                : 'text-slate-500 hover:text-slate-700'
+                ? 'bg-white dark:bg-slate-600 text-indigo-600 dark:text-indigo-300 shadow-sm' 
+                : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
             }`}
           >
             <Banknote className="w-3 h-3" />
@@ -228,7 +223,7 @@ const BillEstimator: React.FC = () => {
         <div className="space-y-6 animate-in fade-in slide-in-from-right-2 duration-200">
           {/* Input */}
           <div>
-            <label className="block text-xs font-bold text-slate-500 uppercase mb-2 flex items-center gap-1">
+            <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-2 flex items-center gap-1">
               {t('enter_units_used')} <Zap className="w-3 h-3 text-yellow-500 fill-yellow-500" />
             </label>
             <div className="relative">
@@ -239,49 +234,49 @@ const BillEstimator: React.FC = () => {
                 onChange={(e) => setUnits(e.target.value === '' ? '' : parseFloat(e.target.value))}
                 onFocus={handleFocus}
                 placeholder="e.g. 205"
-                className="w-full rounded-lg border-slate-200 focus:border-indigo-500 focus:ring-indigo-500 text-lg font-bold text-slate-900 pr-12 bg-white"
+                className="w-full rounded-lg border-slate-200 dark:border-slate-700 focus:border-indigo-500 focus:ring-indigo-500 text-lg font-bold text-slate-900 dark:text-white pr-12 bg-white dark:bg-slate-950"
               />
               <span className="absolute right-4 top-3 text-sm text-slate-400 font-medium pointer-events-none">kWh</span>
             </div>
           </div>
 
           {/* Forward Results */}
-          <div className="bg-slate-50 rounded-lg p-4 border border-slate-200 space-y-3">
+          <div className="bg-slate-50 dark:bg-slate-800/50 rounded-lg p-4 border border-slate-200 dark:border-slate-700 space-y-3">
             <div className="flex justify-between items-center text-sm">
-              <span className="text-slate-600">{t('energy_cost_slab')}</span>
-              <span className="font-medium text-slate-900">{forwardResult.energyCost.toFixed(2)}</span>
+              <span className="text-slate-600 dark:text-slate-400">{t('energy_cost_slab')}</span>
+              <span className="font-medium text-slate-900 dark:text-white">{forwardResult.energyCost.toFixed(2)}</span>
             </div>
             <div className="flex justify-between items-center text-sm">
-              <span className="text-slate-600">{t('demand_charge')}</span>
-              <span className="font-medium text-slate-900">{DEMAND_CHARGE}</span>
+              <span className="text-slate-600 dark:text-slate-400">{t('demand_charge')}</span>
+              <span className="font-medium text-slate-900 dark:text-white">{DEMAND_CHARGE}</span>
             </div>
             <div className="flex justify-between items-center text-sm">
-              <span className="text-slate-600">{t('meter_rent')}</span>
-              <span className="font-medium text-slate-900">{METER_RENT}</span>
+              <span className="text-slate-600 dark:text-slate-400">{t('meter_rent')}</span>
+              <span className="font-medium text-slate-900 dark:text-white">{METER_RENT}</span>
             </div>
             
-            <div className="border-t border-slate-200 my-2"></div>
+            <div className="border-t border-slate-200 dark:border-slate-700 my-2"></div>
 
             <div className="flex justify-between items-center text-sm">
               <div className="flex items-center gap-1">
-                  <span className="text-slate-600">{t('total_base')}</span>
-                  <span className="text-[10px] text-slate-400 bg-slate-100 px-1 rounded border border-slate-200">{t('subject_to_vat')}</span>
+                  <span className="text-slate-600 dark:text-slate-400">{t('total_base')}</span>
+                  <span className="text-[10px] text-slate-400 dark:text-slate-500 bg-slate-100 dark:bg-slate-800 px-1 rounded border border-slate-200 dark:border-slate-700">{t('subject_to_vat')}</span>
               </div>
-              <span className="font-medium text-slate-900">{forwardResult.totalSubjectToVat.toFixed(2)}</span>
+              <span className="font-medium text-slate-900 dark:text-white">{forwardResult.totalSubjectToVat.toFixed(2)}</span>
             </div>
-            <div className="flex justify-between items-center text-sm text-slate-600">
-              <span>{t('vat_total')}</span>
+            <div className="flex justify-between items-center text-sm text-slate-600 dark:text-slate-400">
+              <span>{t('vat_total')} ({VAT_RATE*100}%)</span>
               <span>{forwardResult.vatAmount.toFixed(2)}</span>
             </div>
 
-            <div className="border-t border-slate-200 pt-2 flex justify-between items-center">
-              <span className="font-bold text-indigo-900 uppercase text-xs tracking-wider">{t('est_total_payable')}</span>
-              <span className="font-bold text-indigo-700 text-xl">৳{Math.round(forwardResult.totalPayable)}</span>
+            <div className="border-t border-slate-200 dark:border-slate-700 pt-2 flex justify-between items-center">
+              <span className="font-bold text-indigo-900 dark:text-indigo-300 uppercase text-xs tracking-wider">{t('est_total_payable')}</span>
+              <span className="font-bold text-indigo-700 dark:text-indigo-400 text-xl">৳{Math.round(forwardResult.totalPayable)}</span>
             </div>
           </div>
 
           {/* Forward Explainer */}
-          <div className="flex gap-2 items-start bg-indigo-50 text-indigo-800 p-3 rounded-md text-xs">
+          <div className="flex gap-2 items-start bg-indigo-50 dark:bg-indigo-900/20 text-indigo-800 dark:text-indigo-300 p-3 rounded-md text-xs">
             <Info className="w-4 h-4 mt-0.5 shrink-0" />
             <p className="opacity-90 leading-relaxed">
               {t('forward_explainer')}
@@ -292,8 +287,8 @@ const BillEstimator: React.FC = () => {
         <div className="space-y-6 animate-in fade-in slide-in-from-left-2 duration-200">
            {/* Reverse Input */}
           <div>
-            <label className="block text-xs font-bold text-slate-500 uppercase mb-2 flex items-center gap-1">
-              {t('enter_total_bill')} <Banknote className="w-3 h-3 text-indigo-500" />
+            <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-2 flex items-center gap-1">
+              {t('enter_total_bill')} <Banknote className="w-3 h-3 text-indigo-500 dark:text-indigo-400" />
             </label>
             <div className="relative">
               <input
@@ -303,15 +298,15 @@ const BillEstimator: React.FC = () => {
                 onChange={(e) => setTargetBill(e.target.value === '' ? '' : parseFloat(e.target.value))}
                 onFocus={handleFocus}
                 placeholder="e.g. 1497.77"
-                className="w-full rounded-lg border-slate-200 focus:border-indigo-500 focus:ring-indigo-500 text-lg font-bold text-slate-900 pr-12 bg-white"
+                className="w-full rounded-lg border-slate-200 dark:border-slate-700 focus:border-indigo-500 focus:ring-indigo-500 text-lg font-bold text-slate-900 dark:text-white pr-12 bg-white dark:bg-slate-950"
               />
               <span className="absolute right-4 top-3 text-sm text-slate-400 font-medium pointer-events-none">{t('bdt')}</span>
             </div>
           </div>
 
           {/* Intro Text */}
-          <div className="bg-slate-50 p-4 rounded-lg border border-slate-200 text-sm text-slate-600 space-y-2">
-            <p className="font-medium text-slate-800 uppercase tracking-wide text-xs">{t('est_unit_uses')}</p>
+          <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-lg border border-slate-200 dark:border-slate-700 text-sm text-slate-600 dark:text-slate-300 space-y-2">
+            <p className="font-medium text-slate-800 dark:text-slate-200 uppercase tracking-wide text-xs">{t('est_unit_uses')}</p>
             <p className="text-sm">
               {t('reverse_intro_1')}
             </p>
@@ -323,28 +318,28 @@ const BillEstimator: React.FC = () => {
           {(typeof targetBill === 'number' && targetBill > 0) ? (
             <>
                {/* Component Table */}
-               <div className="overflow-x-auto rounded-lg border border-slate-200">
+               <div className="overflow-x-auto rounded-lg border border-slate-200 dark:border-slate-700">
                   <table className="w-full text-sm text-left">
-                    <thead className="bg-slate-100 text-slate-700 font-semibold text-xs uppercase">
+                    <thead className="bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-semibold text-xs uppercase">
                       <tr>
-                        <th className="p-3 border-b border-slate-200">{t('component')}</th>
-                        <th className="p-3 border-b border-slate-200">{t('value')}</th>
+                        <th className="p-3 border-b border-slate-200 dark:border-slate-700">{t('component')}</th>
+                        <th className="p-3 border-b border-slate-200 dark:border-slate-700">{t('value')}</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-slate-100 text-slate-700 bg-white">
+                    <tbody className="divide-y divide-slate-100 dark:divide-slate-800 text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-900">
                       <tr><td className="p-3">{t('total_bill_payable')}</td><td className="p-3 font-medium">{targetBill.toFixed(2)}</td></tr>
                       <tr><td className="p-3">{t('fixed_charges')}</td><td className="p-3 font-medium">{(DEMAND_CHARGE + METER_RENT).toFixed(2)}</td></tr>
-                      <tr><td className="p-3">{t('vat_rate')}</td><td className="p-3 font-medium">5% (0.05)</td></tr>
+                      <tr><td className="p-3">{t('vat_rate')}</td><td className="p-3 font-medium">{VAT_RATE * 100}% ({VAT_RATE})</td></tr>
                       <tr><td className="p-3">{t('slab_rates')}</td><td className="p-3 font-medium">{SLABS.map(s => s.rate).join(', ')}</td></tr>
                     </tbody>
                   </table>
                </div>
 
                {/* Big Result */}
-               <div className="bg-indigo-50 rounded-xl p-5 border border-indigo-100 text-center">
-                  <div className="text-xs text-indigo-600 uppercase font-bold tracking-wider mb-1">{t('estimated_consumption')}</div>
-                  <div className="text-3xl font-bold text-slate-900">
-                     {reverseResult.totalUnits.toFixed(2)} <span className="text-lg text-slate-500 font-medium">kWh</span>
+               <div className="bg-indigo-50 dark:bg-indigo-900/20 rounded-xl p-5 border border-indigo-100 dark:border-indigo-800 text-center">
+                  <div className="text-xs text-indigo-600 dark:text-indigo-400 uppercase font-bold tracking-wider mb-1">{t('estimated_consumption')}</div>
+                  <div className="text-3xl font-bold text-slate-900 dark:text-white">
+                     {reverseResult.totalUnits.toFixed(2)} <span className="text-lg text-slate-500 dark:text-slate-400 font-medium">kWh</span>
                   </div>
                </div>
 
@@ -352,22 +347,22 @@ const BillEstimator: React.FC = () => {
                <div className="space-y-6">
                  {reverseResult.logicSteps.map((step, idx) => (
                     <div key={idx} className="space-y-3">
-                       <h4 className="text-sm font-bold text-slate-900 border-b border-slate-200 pb-2">{step.title}</h4>
-                       <p className="text-xs text-slate-500 italic leading-relaxed">{step.description}</p>
+                       <h4 className="text-sm font-bold text-slate-900 dark:text-white border-b border-slate-200 dark:border-slate-700 pb-2">{step.title}</h4>
+                       <p className="text-xs text-slate-500 dark:text-slate-400 italic leading-relaxed">{step.description}</p>
                        
                        {/* Table for Slabs section */}
                        {step.tableHeader && (
-                         <div className="overflow-x-auto mb-2 rounded border border-slate-200">
+                         <div className="overflow-x-auto mb-2 rounded border border-slate-200 dark:border-slate-700">
                            <table className="w-full text-xs text-left">
-                             <thead className="bg-slate-100 text-slate-500 font-medium">
+                             <thead className="bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 font-medium">
                                <tr>
-                                 <th className="p-2 border-b">{t('slab_range')}</th>
-                                 <th className="p-2 border-b">{t('units_in_slab')}</th>
-                                 <th className="p-2 border-b">{t('rate')}</th>
-                                 <th className="p-2 border-b">{t('cost_full_slab')}</th>
+                                 <th className="p-2 border-b border-slate-200 dark:border-slate-700">{t('slab_range')}</th>
+                                 <th className="p-2 border-b border-slate-200 dark:border-slate-700">{t('units_in_slab')}</th>
+                                 <th className="p-2 border-b border-slate-200 dark:border-slate-700">{t('rate')}</th>
+                                 <th className="p-2 border-b border-slate-200 dark:border-slate-700">{t('cost_full_slab')}</th>
                                </tr>
                              </thead>
-                             <tbody className="divide-y divide-slate-100 text-slate-700 bg-white">
+                             <tbody className="divide-y divide-slate-100 dark:divide-slate-800 text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-900">
                                {SLABS.map((s, i) => {
                                  const prev = i === 0 ? 0 : SLABS[i-1].limit;
                                  const size = s.limit - prev;
@@ -386,16 +381,16 @@ const BillEstimator: React.FC = () => {
                          </div>
                        )}
 
-                       <div className="space-y-3 pl-2 border-l-2 border-indigo-100">
+                       <div className="space-y-3 pl-2 border-l-2 border-indigo-100 dark:border-indigo-900">
                           {step.subSteps.map((sub, sIdx) => (
-                             <div key={sIdx} className="bg-white p-3 rounded-lg border border-slate-100 shadow-sm">
-                                <div className="text-xs font-bold text-indigo-700 mb-1">{sub.label}</div>
-                                <div className="text-sm text-slate-700 mb-2">{sub.text}</div>
-                                <div className="bg-slate-50 p-2 rounded text-xs font-mono text-slate-600 border border-slate-200 whitespace-pre-wrap">
+                             <div key={sIdx} className="bg-white dark:bg-slate-800 p-3 rounded-lg border border-slate-100 dark:border-slate-700 shadow-sm">
+                                <div className="text-xs font-bold text-indigo-700 dark:text-indigo-300 mb-1">{sub.label}</div>
+                                <div className="text-sm text-slate-700 dark:text-slate-300 mb-2">{sub.text}</div>
+                                <div className="bg-slate-50 dark:bg-slate-900 p-2 rounded text-xs font-mono text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700 whitespace-pre-wrap">
                                    {sub.calculation}
                                 </div>
                                 {sub.note && (
-                                   <div className="mt-2 text-xs text-orange-600 font-medium bg-orange-50 p-1.5 rounded">
+                                   <div className="mt-2 text-xs text-orange-600 dark:text-orange-400 font-medium bg-orange-50 dark:bg-orange-900/20 p-1.5 rounded">
                                       {sub.note}
                                    </div>
                                 )}
@@ -406,12 +401,12 @@ const BillEstimator: React.FC = () => {
                  ))}
                </div>
                
-               <div className="bg-green-50 p-4 rounded-lg border border-green-100 text-xs text-green-800 font-medium leading-relaxed">
+               <div className="bg-green-50 dark:bg-green-900/20 p-4 rounded-lg border border-green-100 dark:border-green-800 text-xs text-green-800 dark:text-green-300 font-medium leading-relaxed">
                   <strong>{t('key_takeaway')}:</strong> {t('key_takeaway_text')}
                </div>
             </>
           ) : (
-            <div className="text-center py-8 text-slate-400 text-sm bg-slate-50 rounded-lg border border-dashed border-slate-200">
+            <div className="text-center py-8 text-slate-400 dark:text-slate-500 text-sm bg-slate-50 dark:bg-slate-800/50 rounded-lg border border-dashed border-slate-200 dark:border-slate-700">
               {t('enter_bill_prompt')}
             </div>
           )}

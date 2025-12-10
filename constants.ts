@@ -1,5 +1,5 @@
 
-import { MeterReading } from "./types";
+import { MeterReading, TariffConfig } from "./types";
 
 export const INITIAL_CONFIG = {
   month: new Date().toLocaleString('default', { month: 'long' }),
@@ -22,3 +22,15 @@ export const INITIAL_METERS: MeterReading[] = [
   { id: '2', name: 'Anayet', meterNo: '2', previous: 0, current: 100 },
   { id: '3', name: 'Arif', meterNo: '3', previous: 0, current: 75 },
 ];
+
+export const DEFAULT_TARIFF_CONFIG: TariffConfig = {
+  demandCharge: 84,
+  meterRent: 10,
+  vatRate: 0.05,
+  slabs: [
+    { limit: 75, rate: 5.26 },
+    { limit: 200, rate: 7.20 },
+    { limit: 300, rate: 7.59 },
+    { limit: 400, rate: 8.02 },
+  ]
+};

@@ -18,7 +18,58 @@ const translations: Record<Language, Record<string, string>> = {
     'date_generated': 'Date Generated',
     'next_month': 'Next Month',
     'confirm_next_month': 'Start bill for the next month? Current readings will become previous readings.',
+    'settings': 'Settings',
+    'tenants': 'Tenants',
+    'trends': 'Trends',
+    'calculator': 'Calculator',
+    'dark_mode': 'Dark Mode',
+    'light_mode': 'Light Mode',
     
+    // Cloud
+    'cloud_setup': 'Cloud Setup',
+    'cloud_desc': 'Connect your own Firebase project to enable cloud sync and multi-user access.',
+    'paste_config': 'Paste Firebase Config JSON',
+    'config_placeholder': '{"apiKey": "...", "authDomain": "..."}',
+    'connect': 'Connect',
+    'connected': 'Connected',
+    'login': 'Login',
+    'logout': 'Logout',
+    'syncing': 'Syncing...',
+    'cloud_mode': 'Cloud Mode',
+    'local_mode': 'Local Mode',
+    'login_prompt': 'Login to sync data',
+
+    // Tariff Settings
+    'tariff_settings': 'Master Tariff Settings',
+    'tariff_desc': 'Configure the base rates used for calculations. Changes affect all future calculations.',
+    'vat_rate_percent': 'VAT Rate (%)',
+    'slab_rates_config': 'Slab Rates Configuration',
+    'limit': 'Limit (Units)',
+    'rate_per_unit': 'Rate (BDT)',
+    'add_slab': 'Add Slab',
+    'reset_defaults': 'Reset to Defaults',
+    'save_changes': 'Save Changes',
+    'cancel': 'Cancel',
+    
+    // Tenant Manager
+    'tenant_manager': 'Manage Tenants',
+    'tenant_desc': 'Maintain a list of regular tenants for quick selection.',
+    'add_tenant': 'Add Tenant',
+    'phone': 'Phone',
+    'email': 'Email',
+    'no_tenants': 'No tenants added yet.',
+    
+    // Trends Dashboard
+    'trends_dashboard': 'Trends & Analytics',
+    'bill_history_trend': 'Total Bill History',
+    'consumption_trend': 'User Consumption Trends',
+    'avg_bill': 'Avg Bill',
+    'max_bill': 'Highest Bill',
+    'total_paid': 'Total Paid YTD',
+    'insight_increase': 'increase vs last month',
+    'insight_decrease': 'decrease vs last month',
+    'no_history_data': 'Not enough history data to show trends. Save some bills first!',
+
     // Config
     'data_input_part': 'Data Input Part',
     'costs_configuration': 'Costs Configuration',
@@ -58,7 +109,7 @@ const translations: Record<Language, Record<string, string>> = {
     'total_base': 'Total Base',
     'subject_to_vat': 'Subject to VAT',
     'est_total_payable': 'Est. Total Payable',
-    'forward_explainer': 'This calculation uses the LT-A residential slab rates: 0-75 units @ 5.26, 76-200 @ 7.20, 201-300 @ 7.59, 301-400 @ 8.02. Includes 5% VAT on the total base amount.',
+    'forward_explainer': 'This calculation uses the configured slab rates. It includes VAT on the total base amount.',
     
     // Estimator Reverse Logic
     'est_unit_uses': 'ESTIMATED UNIT USES',
@@ -136,6 +187,16 @@ const translations: Record<Language, Record<string, string>> = {
     'Uttom': 'Uttom',
     'Anayet': 'Anayet',
     'Arif': 'Arif',
+
+    // OCR
+    'scan_meter': 'Scan Meter',
+    'capture': 'Capture',
+    'processing': 'Processing...',
+    'retry': 'Retry',
+    'use_value': 'Use Value',
+    'camera_permission_denied': 'Camera permission denied. Please allow access to use the scanner.',
+    'no_text_detected': 'No readable text found. Try getting closer to the meter.',
+    'scan_instruction': 'Align the meter reading within the frame. Ensure good lighting.',
   },
   bn: {
     // Header
@@ -145,6 +206,57 @@ const translations: Record<Language, Record<string, string>> = {
     'date_generated': 'তৈরির তারিখ',
     'next_month': 'পরবর্তী মাস',
     'confirm_next_month': 'পরবর্তী মাসের বিল শুরু করবেন? বর্তমান রিডিং পূর্ববর্তী রিডিং হয়ে যাবে।',
+    'settings': 'সেটিংস',
+    'tenants': 'ভাড়াটিয়া',
+    'trends': 'ট্রেন্ডস',
+    'calculator': 'ক্যালকুলেটর',
+    'dark_mode': 'ডার্ক মোড',
+    'light_mode': 'লাইট মোড',
+
+    // Cloud
+    'cloud_setup': 'ক্লাউড সেটআপ',
+    'cloud_desc': 'ক্লাউড সিঙ্ক এবং মাল্টি-ইউজার অ্যাক্সেস সক্ষম করতে আপনার নিজের ফায়ারবেস প্রজেক্ট সংযুক্ত করুন।',
+    'paste_config': 'ফায়ারবেস কনফিগ JSON পেস্ট করুন',
+    'config_placeholder': '{"apiKey": "...", "authDomain": "..."}',
+    'connect': 'সংযুক্ত করুন',
+    'connected': 'সংযুক্ত',
+    'login': 'লগইন',
+    'logout': 'লগআউট',
+    'syncing': 'সিঙ্ক হচ্ছে...',
+    'cloud_mode': 'ক্লাউড মোড',
+    'local_mode': 'লোকাল মোড',
+    'login_prompt': 'ডেটা সিঙ্ক করতে লগইন করুন',
+
+    // Tariff Settings
+    'tariff_settings': 'ট্যারিফ সেটিংস',
+    'tariff_desc': 'গণনার জন্য বেস রেট কনফিগার করুন। পরিবর্তনগুলি ভবিষ্যতের সমস্ত গণনায় প্রভাব ফেলবে।',
+    'vat_rate_percent': 'ভ্যাট রেট (%)',
+    'slab_rates_config': 'স্ল্যাব রেট কনফিগারেশন',
+    'limit': 'সীমা (ইউনিট)',
+    'rate_per_unit': 'রেট (টাকা)',
+    'add_slab': 'স্ল্যাব যোগ করুন',
+    'reset_defaults': 'ডিফল্ট রিসেট',
+    'save_changes': 'সংরক্ষণ করুন',
+    'cancel': 'বাতিল',
+    
+    // Tenant Manager
+    'tenant_manager': 'ভাড়াটিয়া ব্যবস্থাপনা',
+    'tenant_desc': 'দ্রুত নির্বাচনের জন্য নিয়মিত ভাড়াটিয়াদের তালিকা সংরক্ষণ করুন।',
+    'add_tenant': 'ভাড়াটিয়া যোগ করুন',
+    'phone': 'ফোন',
+    'email': 'ইমেইল',
+    'no_tenants': 'এখনও কোন ভাড়াটিয়া যোগ করা হয়নি।',
+    
+    // Trends Dashboard
+    'trends_dashboard': 'ট্রেন্ডস এবং অ্যানালিটিক্স',
+    'bill_history_trend': 'মোট বিলের ইতিহাস',
+    'consumption_trend': 'ব্যবহারকারীর ব্যবহারের ট্রেন্ড',
+    'avg_bill': 'গড় বিল',
+    'max_bill': 'সর্বোচ্চ বিল',
+    'total_paid': 'বছরে মোট পরিশোধ',
+    'insight_increase': 'গত মাসের চেয়ে বৃদ্ধি',
+    'insight_decrease': 'গত মাসের চেয়ে কম',
+    'no_history_data': 'ট্রেন্ড দেখানোর জন্য যথেষ্ট ডেটা নেই। প্রথমে কিছু বিল সেভ করুন!',
 
     // Config
     'data_input_part': 'ডেটা ইনপুট অংশ',
@@ -185,7 +297,7 @@ const translations: Record<Language, Record<string, string>> = {
     'total_base': 'মোট বেস',
     'subject_to_vat': 'ভ্যাট প্রযোজ্য',
     'est_total_payable': 'আনুমানিক মোট প্রদেয়',
-    'forward_explainer': 'এই গণনা LT-A আবাসিক স্ল্যাব রেট ব্যবহার করে: 0-75 ইউনিট @ 5.26, 76-200 @ 7.20, 201-300 @ 7.59, 301-400 @ 8.02। মোট বেস পরিমাণের উপর 5% ভ্যাট অন্তর্ভুক্ত।',
+    'forward_explainer': 'এই গণনা কনফিগার করা স্ল্যাব রেট ব্যবহার করে। মোট বেস পরিমাণের উপর ভ্যাট অন্তর্ভুক্ত।',
 
     // Estimator Reverse Logic
     'est_unit_uses': 'আনুমানিক ইউনিট ব্যবহার',
@@ -263,6 +375,16 @@ const translations: Record<Language, Record<string, string>> = {
     'Uttom': 'উত্তম',
     'Anayet': 'এনায়েত',
     'Arif': 'আরিফ',
+
+    // OCR
+    'scan_meter': 'মিটার স্ক্যান',
+    'capture': 'ছবি তুলুন',
+    'processing': 'প্রসেসিং...',
+    'retry': 'পুনরায় চেষ্টা করুন',
+    'use_value': 'মান ব্যবহার করুন',
+    'camera_permission_denied': 'ক্যামেরার অনুমতি প্রত্যাখ্যান করা হয়েছে। স্ক্যানার ব্যবহার করতে দয়া করে অ্যাক্সেস দিন।',
+    'no_text_detected': 'কোনো পাঠযোগ্য লেখা পাওয়া যায়নি। মিটারের কাছাকাছি যাওয়ার চেষ্টা করুন।',
+    'scan_instruction': 'মিটারের রিডিং ফ্রেমের মধ্যে রাখুন। পর্যাপ্ত আলো নিশ্চিত করুন।',
   }
 };
 

@@ -42,3 +42,32 @@ export interface SavedBill {
   mainMeter: MeterReading;
   meters: MeterReading[];
 }
+
+export interface Slab {
+  limit: number;
+  rate: number;
+}
+
+export interface TariffConfig {
+  demandCharge: number;
+  meterRent: number;
+  vatRate: number; // Stored as decimal (e.g., 0.05 for 5%)
+  slabs: Slab[];
+}
+
+export interface Tenant {
+  id: string;
+  name: string;
+  phone?: string;
+  email?: string;
+}
+
+export interface FirebaseConfigJson {
+  apiKey: string;
+  authDomain: string;
+  projectId: string;
+  storageBucket: string;
+  messagingSenderId: string;
+  appId: string;
+  measurementId?: string;
+}
