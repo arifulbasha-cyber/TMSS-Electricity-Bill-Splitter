@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo, useEffect } from 'react';
 import { BillConfig, MeterReading, BillCalculationResult, UserCalculation, SavedBill } from './types';
 import { INITIAL_CONFIG, INITIAL_METERS, INITIAL_MAIN_METER } from './constants';
@@ -7,7 +8,7 @@ import ConsumptionStats from './components/ConsumptionStats';
 import CalculationSummary from './components/CalculationSummary';
 import BillHistory from './components/BillHistory';
 import BillEstimator from './components/BillEstimator';
-import { Lightbulb, Database, Download, Globe } from 'lucide-react';
+import { Lightbulb, Database, Download } from 'lucide-react';
 import { LanguageProvider, useLanguage } from './i18n';
 
 // Inner App component to use the hook
@@ -72,7 +73,15 @@ const AppContent: React.FC = () => {
 
   const loadFromHistory = (record: SavedBill) => {
     if (window.confirm(t('confirm_load').replace('{month}', record.config.month))) {
-      setConfig(record.config);
+      // Create a clean config object from the saved record, omitting old properties if present
+      const cleanConfig: BillConfig = {
+        month: record.config.month,
+        dateGenerated: record.config.dateGenerated,
+        totalBillPayable: record.config.totalBillPayable,
+        bkashFee: record.config.bkashFee,
+        lateFee: record.config.lateFee || 0
+      };
+      setConfig(cleanConfig);
       setMainMeter(record.mainMeter);
       setMeters(record.meters);
     }
@@ -96,14 +105,23 @@ const AppContent: React.FC = () => {
 
   // The Core Logic
   const calculationResult: BillCalculationResult = useMemo(() => {
+    const VAT_RATE = 0.05;
+    const DEMAND_CHARGE = 84;
+    const METER_RENT = 10;
+
+    // 0. Calculate Total VAT
+    // Formula: VAT Amount = Total Bill * VAT Rate / (1 + VAT Rate)
+    // This assumes the Total Bill includes the VAT.
+    const vatTotal = (config.totalBillPayable * VAT_RATE) / (1 + VAT_RATE);
+
     // 1. Calculate Fixed VAT
     // Formula: (Demand Charge + Meter Rent) * 5%
-    const vatFixed = (config.demandCharge + config.meterRent) * 0.05;
+    const vatFixed = (DEMAND_CHARGE + METER_RENT) * VAT_RATE;
 
     // 2. Calculate VAT Distributed
-    // Formula: VAT Distributed = Total VAT (Input) - VAT Fixed
-    const vatDistributed = config.vat - vatFixed;
-    const vatTotal = config.vat;
+    // Formula: ((Total Bill / 1.05) - (Demand + Rent)) * 0.05
+    // This isolates the variable (energy) base of the bill and calculates 5% VAT on it.
+    const vatDistributed = Math.max(0, ((config.totalBillPayable / (1 + VAT_RATE)) - (DEMAND_CHARGE + METER_RENT)) * VAT_RATE);
 
     // 3. Calculate Total Units
     let totalUnits = 0;
@@ -115,14 +133,16 @@ const AppContent: React.FC = () => {
 
     // 4. Rate Calculation
     // Formula: (Total Bill - Demand - Rent - VAT Fixed) / Total Units
-    // Note: This effectively includes energy cost + distributed VAT in the rate
-    const variableCostPool = config.totalBillPayable - config.demandCharge - config.meterRent - vatFixed;
+    // This "variableCostPool" essentially contains the Energy Cost + VAT on Energy Cost.
+    // By distributing this pool by units, we are distributing the Energy Cost and its associated VAT.
+    const variableCostPool = config.totalBillPayable - DEMAND_CHARGE - METER_RENT - vatFixed;
     const calculatedRate = totalUnits > 0 ? variableCostPool / totalUnits : 0;
 
     // 5. Fixed Cost Per User
-    // Formula: (Demand Charge + Meter Rent + VAT Fixed + bKash Fee) / N_users
+    // Formula: (Demand Charge + Meter Rent + VAT Fixed + bKash Fee + Late Fee) / N_users
     const numUsers = meters.length;
-    const totalFixedPool = config.demandCharge + config.meterRent + vatFixed + config.bkashFee;
+    const lateFee = config.lateFee || 0;
+    const totalFixedPool = DEMAND_CHARGE + METER_RENT + vatFixed + config.bkashFee + lateFee;
     const fixedCostPerUser = numUsers > 0 ? totalFixedPool / numUsers : 0;
 
     // 6. Final Split
@@ -237,9 +257,9 @@ const AppContent: React.FC = () => {
               <h4 className="font-semibold mb-2">{t('how_calc')}</h4>
               <ul className="list-disc list-inside space-y-1 opacity-80 text-xs">
                  <li><strong>{t('vat_fixed')}:</strong> (Demand + Rent) × 5%</li>
-                 <li><strong>{t('vat_distributed')}:</strong> Input VAT - VAT Fixed</li>
+                 <li><strong>{t('vat_distributed')}:</strong> Calculated Total VAT - VAT Fixed</li>
                  <li><strong>Rate/Unit:</strong> (Total Bill - Demand - Rent - VAT Fixed) ÷ Total Units</li>
-                 <li><strong>Fixed Cost (User):</strong> (Demand + Rent + VAT Fixed + bKash) ÷ Users</li>
+                 <li><strong>Fixed Cost (User):</strong> (Demand + Rent + VAT Fixed + bKash + Late Fee) ÷ Users</li>
                  <li><strong>Payable:</strong> (Units × Rate) + Fixed Cost</li>
               </ul>
             </div>

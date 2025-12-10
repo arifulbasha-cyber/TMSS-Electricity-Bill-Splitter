@@ -1,3 +1,4 @@
+
 import React, { useRef, useState } from 'react';
 import { BillCalculationResult, BillConfig, MeterReading } from '../types';
 import { FileText, Printer, Image as ImageIcon, Save, Loader2 } from 'lucide-react';
@@ -16,6 +17,9 @@ const CalculationSummary: React.FC<CalculationSummaryProps> = ({ result, config,
   const { t } = useLanguage();
   const reportRef = useRef<HTMLDivElement>(null);
   const [isGeneratingImage, setIsGeneratingImage] = useState(false);
+
+  const DEMAND_CHARGE = 84;
+  const METER_RENT = 10;
 
   const handlePrint = () => {
     window.print();
@@ -179,11 +183,11 @@ const CalculationSummary: React.FC<CalculationSummaryProps> = ({ result, config,
                  </div>
                  <div className="flex justify-between items-baseline">
                     <span className="text-slate-600">{t('demand_charge')}</span>
-                    <span className="font-medium text-slate-900">{config.demandCharge}</span>
+                    <span className="font-medium text-slate-900">{DEMAND_CHARGE}</span>
                  </div>
                  <div className="flex justify-between items-baseline">
                     <span className="text-slate-600">{t('meter_rent')}</span>
-                    <span className="font-medium text-slate-900">{config.meterRent}</span>
+                    <span className="font-medium text-slate-900">{METER_RENT}</span>
                  </div>
                  <div className="flex justify-between items-baseline">
                     <div className="flex items-baseline gap-2">
@@ -209,6 +213,10 @@ const CalculationSummary: React.FC<CalculationSummaryProps> = ({ result, config,
                  <div className="flex justify-between items-baseline">
                     <span className="text-slate-600">{t('bkash_fee')}</span>
                     <span className="font-medium text-slate-900">{config.bkashFee || '-'}</span>
+                 </div>
+                 <div className="flex justify-between items-baseline">
+                    <span className="text-slate-600">{t('late_fee')}</span>
+                    <span className="font-medium text-slate-900">{config.lateFee || '-'}</span>
                  </div>
              </div>
           </div>

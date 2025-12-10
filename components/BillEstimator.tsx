@@ -68,7 +68,9 @@ const BillEstimator: React.FC = () => {
   // --- Reverse Calculation ---
   const calculateUnitsDetailed = (bill: number) => {
     // Step 1: Reverse VAT
-    const taxableBase = bill / (1 + VAT_RATE);
+    // Formula provided: VAT Amount = Total Bill * VAT Rate / (1 + VAT Rate)
+    const vatAmount = (bill * VAT_RATE) / (1 + VAT_RATE);
+    const taxableBase = bill - vatAmount;
     
     // Step 1b: Remove Fixed Charges
     const energyCost = taxableBase - (DEMAND_CHARGE + METER_RENT);
@@ -83,7 +85,7 @@ const BillEstimator: React.FC = () => {
             {
                 label: t('step1a_label'),
                 text: t('step1a_text'),
-                calculation: `${bill.toFixed(2)} / 1.05 = ${taxableBase.toFixed(2)}`
+                calculation: `VAT = (${bill.toFixed(2)} × ${VAT_RATE}) ÷ ${(1 + VAT_RATE).toFixed(2)} = ${vatAmount.toFixed(2)}\nBase = ${bill.toFixed(2)} - ${vatAmount.toFixed(2)} = ${taxableBase.toFixed(2)}`
             },
             {
                 label: t('step1b_label'),

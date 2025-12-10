@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useState, ReactNode } from 'react';
 
 type Language = 'en' | 'bn';
@@ -24,6 +25,7 @@ const translations: Record<Language, Record<string, string>> = {
     'meter_rent': 'Meter Rent',
     'vat_total': 'VAT (Total)',
     'bkash_fee': 'bKash Fee',
+    'late_fee': 'Late Fee',
     'bdt': 'BDT',
 
     // Meter Readings
@@ -74,7 +76,7 @@ const translations: Record<Language, Record<string, string>> = {
     'step1_title': '1. ⚙️ Reverse the VAT Calculation',
     'step1_desc': 'First, you must remove the VAT and Fixed Charges to isolate the VAT-Exclusive Energy Cost, which is the amount directly derived from units.',
     'step1a_label': 'Step 1a: Remove VAT to Find the Taxable Base',
-    'step1a_text': 'The Total Bill is the Taxable Base multiplied by (1 + VAT Rate).',
+    'step1a_text': 'Calculate the VAT amount included in the Total Bill: (Total Bill × VAT Rate) / (1 + VAT Rate). Then subtract this VAT from the Total Bill to get the Taxable Base.',
     'step1b_label': 'Step 1b: Remove Fixed Charges to Find Energy Cost',
     'step1b_text': 'The Total Subject to VAT includes the Fixed Charges. Subtract them to find the energy cost.',
     'step2_title': '2. ⚡ Reverse the Tiered Rate Calculation (The Hard Part)',
@@ -148,6 +150,7 @@ const translations: Record<Language, Record<string, string>> = {
     'meter_rent': 'মিটার ভাড়া',
     'vat_total': 'ভ্যাট (মোট)',
     'bkash_fee': 'বিকাশ ফি',
+    'late_fee': 'বিলম্ব ফি',
     'bdt': 'টাকা',
 
     // Meter Readings
@@ -198,7 +201,7 @@ const translations: Record<Language, Record<string, string>> = {
     'step1_title': '১. ⚙️ ভ্যাট গণনা বিপরীত করুন',
     'step1_desc': 'প্রথমে, ভ্যাট এবং ফিক্সড চার্জ সরিয়ে ভ্যাট-মুক্ত এনার্জি খরচ বের করতে হবে, যা সরাসরি ইউনিট থেকে আসে।',
     'step1a_label': 'ধাপ ১ক: ভ্যাট সরিয়ে ট্যাক্সেবল বেস খুঁজুন',
-    'step1a_text': 'মোট বিল হলো ট্যাক্সেবল বেস গুণ (১ + ভ্যাট রেট)।',
+    'step1a_text': 'মোট বিলে অন্তর্ভুক্ত ভ্যাটের পরিমাণ গণনা করুন: (মোট বিল × ভ্যাট রেট) ÷ (১ + ভ্যাট রেট)। এরপর মোট বিল থেকে এই ভ্যাট বিয়োগ করে ট্যাক্সেবল বেস বের করুন।',
     'step1b_label': 'ধাপ ১খ: ফিক্সড চার্জ সরিয়ে এনার্জি খরচ খুঁজুন',
     'step1b_text': 'ভ্যাট প্রযোজ্য মোটের মধ্যে ফিক্সড চার্জ অন্তর্ভুক্ত। এনার্জি খরচ পেতে তা বিয়োগ করুন।',
     'step2_title': '২. ⚡ টায়ার্ড রেট গণনা বিপরীত করুন (কঠিন অংশ)',

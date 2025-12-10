@@ -5,10 +5,8 @@ export const INITIAL_CONFIG = {
   month: new Date().toLocaleString('default', { month: 'long' }),
   dateGenerated: new Date().toISOString().split('T')[0],
   totalBillPayable: 1497,
-  vat: 71,
-  demandCharge: 84,
-  meterRent: 10,
   bkashFee: 0,
+  lateFee: 0,
 };
 
 export const INITIAL_MAIN_METER: MeterReading = {

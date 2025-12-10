@@ -3,10 +3,8 @@ export interface BillConfig {
   month: string;
   dateGenerated: string;
   totalBillPayable: number;
-  vat: number;
-  demandCharge: number;
-  meterRent: number;
   bkashFee: number;
+  lateFee: number;
 }
 
 export interface MeterReading {

@@ -1,6 +1,7 @@
+
 import React from 'react';
 import { BillConfig } from '../types';
-import { Settings, Calculator, CreditCard, Banknote, Calendar, Percent } from 'lucide-react';
+import { Settings, CreditCard, Banknote, Calendar, Clock } from 'lucide-react';
 import { useLanguage } from '../i18n';
 
 interface BillConfigurationProps {
@@ -74,51 +75,6 @@ const BillConfiguration: React.FC<BillConfigurationProps> = ({ config, onChange 
           </div>
         </div>
 
-        {/* Demand Charge */}
-        <div className="bg-slate-50 p-4 rounded-xl border border-slate-100 hover:border-indigo-200 transition-colors">
-          <label className="block text-xs font-bold text-slate-500 uppercase mb-2 flex items-center gap-1">
-            {t('demand_charge')} <Calculator className="w-3 h-3" />
-          </label>
-          <input
-            type="number"
-            min="0"
-            value={config.demandCharge}
-            onChange={handleChange('demandCharge')}
-            onFocus={handleFocus}
-            className="w-full rounded-lg border-slate-200 focus:border-indigo-500 focus:ring-indigo-500 text-sm bg-white text-slate-900"
-          />
-        </div>
-
-        {/* Meter Rent */}
-        <div className="bg-slate-50 p-4 rounded-xl border border-slate-100 hover:border-indigo-200 transition-colors">
-          <label className="block text-xs font-bold text-slate-500 uppercase mb-2 flex items-center gap-1">
-            {t('meter_rent')} <Calculator className="w-3 h-3" />
-          </label>
-          <input
-            type="number"
-            min="0"
-            value={config.meterRent}
-            onChange={handleChange('meterRent')}
-            onFocus={handleFocus}
-            className="w-full rounded-lg border-slate-200 focus:border-indigo-500 focus:ring-indigo-500 text-sm bg-white text-slate-900"
-          />
-        </div>
-
-        {/* VAT */}
-        <div className="bg-slate-50 p-4 rounded-xl border border-slate-100 hover:border-indigo-200 transition-colors">
-          <label className="block text-xs font-bold text-slate-500 uppercase mb-2 flex items-center gap-1">
-            {t('vat_total')} <Percent className="w-3 h-3" />
-          </label>
-          <input
-            type="number"
-            min="0"
-            value={config.vat}
-            onChange={handleChange('vat')}
-            onFocus={handleFocus}
-            className="w-full rounded-lg border-slate-200 focus:border-indigo-500 focus:ring-indigo-500 text-sm bg-white text-slate-900"
-          />
-        </div>
-
         {/* bKash Fee */}
         <div className="bg-indigo-50/50 p-4 rounded-xl border border-indigo-100 hover:border-indigo-200 transition-colors">
           <label className="block text-xs font-bold text-indigo-600 uppercase mb-2 flex items-center gap-1">
@@ -132,6 +88,22 @@ const BillConfiguration: React.FC<BillConfigurationProps> = ({ config, onChange 
             onFocus={handleFocus}
             placeholder="0"
             className="w-full rounded-lg border-indigo-200 focus:border-indigo-500 focus:ring-indigo-500 text-sm bg-white text-indigo-700 font-medium"
+          />
+        </div>
+
+        {/* Late Fee */}
+        <div className="bg-orange-50/50 p-4 rounded-xl border border-orange-100 hover:border-orange-200 transition-colors">
+          <label className="block text-xs font-bold text-orange-600 uppercase mb-2 flex items-center gap-1">
+            {t('late_fee')} <Clock className="w-3 h-3" />
+          </label>
+          <input
+            type="number"
+            min="0"
+            value={config.lateFee}
+            onChange={handleChange('lateFee')}
+            onFocus={handleFocus}
+            placeholder="0"
+            className="w-full rounded-lg border-orange-200 focus:border-orange-500 focus:ring-orange-500 text-sm bg-white text-orange-700 font-medium"
           />
         </div>
       </div>
