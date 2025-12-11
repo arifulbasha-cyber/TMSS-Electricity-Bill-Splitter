@@ -28,7 +28,7 @@ const BillHistory: React.FC<BillHistoryProps> = ({ history, onLoad, onDelete }) 
         <History className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
         <h2 className="text-lg font-semibold text-slate-800 dark:text-slate-100">{t('bill_history')}</h2>
       </div>
-      <div className="space-y-3 max-h-96 overflow-y-auto pr-2 custom-scrollbar">
+      <div className="space-y-3">
         {history.map((bill) => (
           <div key={bill.id} className="group p-4 rounded-lg bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 hover:border-indigo-200 dark:hover:border-indigo-700 hover:bg-white dark:hover:bg-slate-800 hover:shadow-sm transition-all">
             <div className="flex justify-between items-start mb-2">
