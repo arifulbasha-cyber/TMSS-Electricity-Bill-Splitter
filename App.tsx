@@ -21,6 +21,19 @@ import { ThemeProvider, useTheme } from './components/ThemeContext';
 import { firebaseService } from './services/firebase';
 import { User } from 'firebase/auth';
 
+// Helper to sort bills: Latest Date Generated -> Latest Saved At
+const sortBills = (bills: SavedBill[]) => {
+  return [...bills].sort((a, b) => {
+    // Primary: Date Generated (Descending)
+    const dateA = a.config.dateGenerated;
+    const dateB = b.config.dateGenerated;
+    if (dateA !== dateB) return dateB.localeCompare(dateA);
+    
+    // Secondary: Saved At (Descending)
+    return new Date(b.savedAt).getTime() - new Date(a.savedAt).getTime();
+  });
+};
+
 // Inner App component to use the hook
 const AppContent: React.FC = () => {
   const { t, language, setLanguage } = useLanguage();
@@ -81,6 +94,7 @@ const AppContent: React.FC = () => {
     localStorage.setItem('tmss_draft_updatedAt', now.toString());
 
     // 2. Debounced Cloud Save
+    // Only save if logged in
     if (user && isFirebaseReady) {
         setIsSyncing(true);
         const timer = setTimeout(async () => {
@@ -119,8 +133,8 @@ const AppContent: React.FC = () => {
           // Cloud Load
           try {
              const cloudHistory = await firebaseService.getBills(user.uid);
-             // Sort by date desc
-             setHistory(cloudHistory.sort((a,b) => new Date(b.savedAt).getTime() - new Date(a.savedAt).getTime()));
+             // Sort by date generated desc
+             setHistory(sortBills(cloudHistory));
 
              const cloudTariff = await firebaseService.getTariff(user.uid);
              if (cloudTariff) setTariffConfig(cloudTariff);
@@ -129,19 +143,17 @@ const AppContent: React.FC = () => {
              setTenants(cloudTenants);
 
              // Check for Newer Draft
+             // Logic: If cloud is newer, retrieve. If local is newer or same, keep local.
              const cloudDraft = await firebaseService.getDraft(user.uid);
              const localUpdatedAt = parseInt(localStorage.getItem('tmss_draft_updatedAt') || '0');
              
              if (cloudDraft && cloudDraft.updatedAt > localUpdatedAt) {
-                 // Cloud is newer, load it automatically
+                 // Cloud is strictly newer, load it automatically
                  setConfig(cloudDraft.config);
                  setMainMeter(cloudDraft.mainMeter);
                  setMeters(cloudDraft.meters);
-                 // We don't need to manually update local storage here, because setting state
-                 // will trigger the main useEffect which saves to local storage.
-                 // However, we want to update the timestamp so we don't think local is newer immediately
+                 // Update local timestamp to match cloud to prevent immediate re-save loop issues
                  localStorage.setItem('tmss_draft_updatedAt', cloudDraft.updatedAt.toString());
-                 // Small visual indicator could go here
                  console.log("Loaded newer draft from cloud");
              }
           } catch (e) {
@@ -151,7 +163,10 @@ const AppContent: React.FC = () => {
           // Local Load
           const savedHistory = localStorage.getItem('tmss_bill_history');
           if (savedHistory) {
-            try { setHistory(JSON.parse(savedHistory)); } catch (e) { console.error(e); }
+            try { 
+              const parsed = JSON.parse(savedHistory);
+              setHistory(sortBills(parsed)); 
+            } catch (e) { console.error(e); }
           }
           const savedTariff = localStorage.getItem('tmss_tariff_config');
           if (savedTariff) {
@@ -258,7 +273,8 @@ const AppContent: React.FC = () => {
       meters: [...meters]
     };
     
-    const updatedHistory = [newRecord, ...history];
+    // Sort immediately
+    const updatedHistory = sortBills([newRecord, ...history]);
     setHistory(updatedHistory);
 
     if (user && isFirebaseReady) {
