@@ -28,7 +28,7 @@ export const DEFAULT_TARIFF_CONFIG: TariffConfig = {
   demandCharge: 84,
   meterRent: 10,
   vatRate: 0.05,
-  bkashCharge: 20,
+  bkashCharge: 10,
   slabs: [
     { limit: 75, rate: 5.26 },
     { limit: 200, rate: 7.20 },

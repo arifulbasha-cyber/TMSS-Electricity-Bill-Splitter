@@ -33,10 +33,22 @@ const AppContent: React.FC = () => {
   // Modal States
   const [activeModal, setActiveModal] = useState<'none' | 'stats' | 'trends' | 'tariff' | 'tenants' | 'cloud'>('none');
 
-  // App Data
-  const [config, setConfig] = useState<BillConfig>(INITIAL_CONFIG);
-  const [mainMeter, setMainMeter] = useState<MeterReading>(INITIAL_MAIN_METER);
-  const [meters, setMeters] = useState<MeterReading[]>(INITIAL_METERS);
+  // App Data - Initialize from LocalStorage Draft if available
+  const [config, setConfig] = useState<BillConfig>(() => {
+    const saved = localStorage.getItem('tmss_draft_config');
+    return saved ? JSON.parse(saved) : INITIAL_CONFIG;
+  });
+  
+  const [mainMeter, setMainMeter] = useState<MeterReading>(() => {
+    const saved = localStorage.getItem('tmss_draft_main_meter');
+    return saved ? JSON.parse(saved) : INITIAL_MAIN_METER;
+  });
+
+  const [meters, setMeters] = useState<MeterReading[]>(() => {
+    const saved = localStorage.getItem('tmss_draft_meters');
+    return saved ? JSON.parse(saved) : INITIAL_METERS;
+  });
+
   const [history, setHistory] = useState<SavedBill[]>([]);
   const [installPrompt, setInstallPrompt] = useState<any>(null);
   
@@ -51,6 +63,19 @@ const AppContent: React.FC = () => {
   const [isFirebaseReady, setIsFirebaseReady] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
 
+  // Auto-Save Draft State
+  useEffect(() => {
+    localStorage.setItem('tmss_draft_config', JSON.stringify(config));
+  }, [config]);
+
+  useEffect(() => {
+    localStorage.setItem('tmss_draft_main_meter', JSON.stringify(mainMeter));
+  }, [mainMeter]);
+
+  useEffect(() => {
+    localStorage.setItem('tmss_draft_meters', JSON.stringify(meters));
+  }, [meters]);
+
   // Init Check
   useEffect(() => {
     setIsFirebaseReady(firebaseService.isReady());
@@ -61,7 +86,7 @@ const AppContent: React.FC = () => {
     }
   }, []);
 
-  // Data Loading Strategy
+  // Data Loading Strategy (History/Settings)
   useEffect(() => {
     const loadData = async () => {
        setIsSyncing(true);
