@@ -1,8 +1,9 @@
 
 import React, { useRef, useState } from 'react';
 import { BillCalculationResult, BillConfig, MeterReading, TariffConfig } from '../types';
-import { FileText, Printer, Image as ImageIcon, Save, Loader2, X } from 'lucide-react';
+import { FileText, Printer, Image as ImageIcon, Save, Loader2, X, FileDown } from 'lucide-react';
 import html2canvas from 'html2canvas';
+import { jsPDF } from 'jspdf';
 import { useLanguage } from '../i18n';
 
 interface CalculationSummaryProps {
@@ -20,6 +21,7 @@ const CalculationSummary: React.FC<CalculationSummaryProps> = ({ result, config,
   const { t, formatNumber, translateMonth, formatDateLocalized } = useLanguage();
   const reportRef = useRef<HTMLDivElement>(null);
   const [isGeneratingImage, setIsGeneratingImage] = useState(false);
+  const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
 
   // Use Dynamic Config
   const DEMAND_CHARGE = tariffConfig.demandCharge;
@@ -30,17 +32,14 @@ const CalculationSummary: React.FC<CalculationSummaryProps> = ({ result, config,
     window.print();
   };
 
-  const handleSaveImage = async () => {
-    if (!reportRef.current) return;
-    
-    try {
-      setIsGeneratingImage(true);
+  const getCaptureCanvas = async (scale: number = 3) => {
+      if (!reportRef.current) return null;
       
       // Clone the element to render it in a "tablet" width container
       const element = reportRef.current;
       const clone = element.cloneNode(true) as HTMLElement;
 
-      // Helper to bump text size classes for the image export
+      // Helper to bump text size classes for the export
       const bumpTextSize = (el: HTMLElement) => {
         const classMap: Record<string, string> = {
           'text-[10px]': 'text-sm',
@@ -67,8 +66,7 @@ const CalculationSummary: React.FC<CalculationSummaryProps> = ({ result, config,
       });
       bumpTextSize(clone); 
 
-      // Force Light Mode styles on clone for export to match "Paper" look usually desired for images
-      
+      // Force styles for export
       const scrollables = clone.querySelectorAll('.overflow-x-auto');
       scrollables.forEach(el => {
         (el as HTMLElement).style.overflow = 'visible';
@@ -80,12 +78,29 @@ const CalculationSummary: React.FC<CalculationSummaryProps> = ({ result, config,
       container.style.left = '-9999px';
       container.style.top = '0';
       container.style.width = '768px';
-      // Detect if dark mode is active to set container background
-      const isDark = document.documentElement.classList.contains('dark');
-      container.style.backgroundColor = isDark ? '#0f172a' : '#ffffff'; // slate-900 or white
       
-      // If dark mode, ensure the clone has 'dark' class context if it relies on it
-      if (isDark) clone.classList.add('dark');
+      // For images/PDF we usually want a clean white look, regardless of current theme
+      container.style.backgroundColor = '#ffffff'; 
+      
+      // Remove dark mode classes from clone
+      clone.classList.remove('dark');
+      const allDark = clone.querySelectorAll('.dark');
+      allDark.forEach(el => el.classList.remove('dark'));
+      
+      // Force text colors to dark for white background
+      const allText = clone.querySelectorAll('*');
+      allText.forEach(el => {
+         if (el instanceof HTMLElement) {
+             if (el.classList.contains('text-white')) {
+                 el.classList.remove('text-white');
+                 el.classList.add('text-slate-900');
+             }
+             if (el.classList.contains('text-slate-200') || el.classList.contains('text-slate-300')) {
+                 el.classList.remove('text-slate-200', 'text-slate-300');
+                 el.classList.add('text-slate-600');
+             }
+         }
+      });
 
       container.appendChild(clone);
       document.body.appendChild(container);
@@ -93,8 +108,8 @@ const CalculationSummary: React.FC<CalculationSummaryProps> = ({ result, config,
       await new Promise(resolve => setTimeout(resolve, 150));
       
       const canvas = await html2canvas(clone, {
-        scale: 3, 
-        backgroundColor: isDark ? '#0f172a' : '#ffffff',
+        scale: scale, 
+        backgroundColor: '#ffffff',
         logging: false,
         useCORS: true,
         width: 768,
@@ -102,6 +117,14 @@ const CalculationSummary: React.FC<CalculationSummaryProps> = ({ result, config,
       });
       
       document.body.removeChild(container);
+      return canvas;
+  };
+
+  const handleSaveImage = async () => {
+    try {
+      setIsGeneratingImage(true);
+      const canvas = await getCaptureCanvas(3);
+      if (!canvas) return;
       
       const image = canvas.toDataURL("image/png");
       const link = document.createElement('a');
@@ -115,6 +138,36 @@ const CalculationSummary: React.FC<CalculationSummaryProps> = ({ result, config,
       alert("Failed to save image. Please try again.");
     } finally {
       setIsGeneratingImage(false);
+    }
+  };
+
+  const handleSavePDF = async () => {
+    try {
+      setIsGeneratingPdf(true);
+      // Use lower scale for PDF to keep file size reasonable, usually 2 is plenty for A4
+      const canvas = await getCaptureCanvas(2); 
+      if (!canvas) return;
+
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF({
+        orientation: 'portrait',
+        unit: 'mm',
+        format: 'a4'
+      });
+
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = pdf.internal.pageSize.getHeight();
+      
+      const imgProps = pdf.getImageProperties(imgData);
+      const imgHeight = (imgProps.height * pdfWidth) / imgProps.width;
+
+      pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, imgHeight);
+      pdf.save(`TMSS-Bill-${config.month}-${config.dateGenerated}.pdf`);
+    } catch (error) {
+      console.error("Failed to generate PDF", error);
+      alert("Failed to save PDF. Please try again.");
+    } finally {
+      setIsGeneratingPdf(false);
     }
   };
 
@@ -155,13 +208,24 @@ const CalculationSummary: React.FC<CalculationSummaryProps> = ({ result, config,
 
             <button 
               onClick={handleSaveImage} 
-              disabled={isGeneratingImage}
+              disabled={isGeneratingImage || isGeneratingPdf}
               className="flex-1 sm:flex-none flex items-center justify-center gap-2 text-sm font-medium text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 hover:text-indigo-600 dark:hover:text-indigo-400 px-3 py-2 rounded-lg transition-colors shadow-sm disabled:opacity-50"
               title={`${t('save_image')} (Tablet View)`}
             >
                {isGeneratingImage ? <Loader2 className="w-4 h-4 animate-spin" /> : <ImageIcon className="w-4 h-4" />} 
                <span className="sm:hidden lg:inline">{t('save_image')}</span>
             </button>
+
+            <button 
+              onClick={handleSavePDF} 
+              disabled={isGeneratingImage || isGeneratingPdf}
+              className="flex-1 sm:flex-none flex items-center justify-center gap-2 text-sm font-medium text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 hover:text-indigo-600 dark:hover:text-indigo-400 px-3 py-2 rounded-lg transition-colors shadow-sm disabled:opacity-50"
+              title="Save as PDF"
+            >
+               {isGeneratingPdf ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileDown className="w-4 h-4" />} 
+               <span className="sm:hidden lg:inline">PDF</span>
+            </button>
+
             <button 
               onClick={handlePrint} 
               className="flex-1 sm:flex-none flex items-center justify-center gap-2 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 px-4 py-2 rounded-lg transition-colors shadow-sm"
