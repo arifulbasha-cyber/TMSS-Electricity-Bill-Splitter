@@ -112,6 +112,12 @@ const MeterReadings: React.FC<MeterReadingsProps> = ({
   // SVG Gauge Calculator
   const gaugeAngle = Math.min(180, (mainMeterUnits / (maxUnits * 1.5 || 200)) * 180);
 
+  // Helper to strip leading zeros for display (e.g. "03" -> "3")
+  const formatMeterDisplay = (val: string) => {
+      const num = parseInt(val);
+      return isNaN(num) ? val : num.toString();
+  };
+
   return (
     <div className="bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-slate-200 dark:border-slate-800 p-6 print-break-inside-avoid transition-colors duration-200">
       <div className="flex items-center justify-between mb-6 border-b border-slate-100 dark:border-slate-800 pb-4">
@@ -140,7 +146,7 @@ const MeterReadings: React.FC<MeterReadingsProps> = ({
                  </div>
                  <div>
                     <div className="font-bold text-sm uppercase tracking-wide text-slate-200">{t('main_meter')}</div>
-                    <div className="text-[10px] text-slate-400 font-mono">#{formatNumber(mainMeter.meterNo || '0000')}</div>
+                    <div className="text-[10px] text-slate-400 font-mono">Meter {formatNumber(mainMeter.meterNo || '0')}</div>
                  </div>
               </div>
            </div>
@@ -270,7 +276,7 @@ const MeterReadings: React.FC<MeterReadingsProps> = ({
                              </div>
                              <div className="min-w-0">
                                 <h3 className="font-bold text-slate-800 dark:text-slate-200 text-sm truncate">{t(reading.name) || t('user_name')}</h3>
-                                <div className="text-[10px] text-slate-500 dark:text-slate-400 font-mono leading-none">#{formatNumber(reading.meterNo)}</div>
+                                <div className="text-[10px] text-slate-500 dark:text-slate-400 font-mono leading-none">Meter {formatNumber(formatMeterDisplay(reading.meterNo))}</div>
                              </div>
                          </div>
                          <div className="text-right shrink-0">
@@ -375,7 +381,7 @@ const MeterReadings: React.FC<MeterReadingsProps> = ({
 
                         <div className="mt-2 pt-1 border-t border-slate-100 dark:border-slate-800 flex justify-between items-center text-[10px] text-slate-400">
                            <div className="flex items-center gap-2">
-                               <span>#{formatNumber(reading.meterNo)}</span>
+                               <span>Meter {formatNumber(formatMeterDisplay(reading.meterNo))}</span>
                            </div>
                            
                            <span className="md:hidden flex items-center gap-1"><Trash2 className="w-3 h-3" /> {t('swipe_hint')}</span>

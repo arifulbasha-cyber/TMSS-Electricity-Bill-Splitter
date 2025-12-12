@@ -120,6 +120,12 @@ const CalculationSummary: React.FC<CalculationSummaryProps> = ({ result, config,
 
   const mainMeterUnits = Math.max(0, mainMeter.current - mainMeter.previous);
 
+  // Helper to strip leading zeros
+  const formatMeterDisplay = (val: string) => {
+    const num = parseInt(val);
+    return isNaN(num) ? val : num.toString();
+  };
+
   return (
     <div className="bg-white dark:bg-slate-900 shadow-xl rounded-xl overflow-hidden border border-slate-200 dark:border-slate-800 print:shadow-none print:border-none print:m-0 print:p-0 w-full transition-colors duration-200">
        {/* Actions Bar (No Print) */}
@@ -258,7 +264,7 @@ const CalculationSummary: React.FC<CalculationSummaryProps> = ({ result, config,
                      <tr className="bg-slate-50/50 dark:bg-slate-800/30 font-medium">
                         <td className="pl-2 pr-1 py-2 sm:px-4 sm:py-2 text-slate-800 dark:text-slate-200">
                            {t(mainMeter.name)}
-                           <div className="sm:hidden text-[10px] text-slate-400 font-normal">#{formatNumber(mainMeter.meterNo)}</div>
+                           <div className="sm:hidden text-[10px] text-slate-400 font-normal">Meter {formatNumber(formatMeterDisplay(mainMeter.meterNo))}</div>
                         </td>
                         <td className="hidden sm:table-cell px-4 py-2 text-center text-slate-600 dark:text-slate-400">{formatNumber(mainMeter.meterNo)}</td>
                         <td className="px-1 py-2 sm:px-4 sm:py-2 text-right text-slate-600 dark:text-slate-400">{formatNumber(mainMeter.previous)}</td>
@@ -273,7 +279,7 @@ const CalculationSummary: React.FC<CalculationSummaryProps> = ({ result, config,
                            <tr key={m.id}>
                               <td className="pl-2 pr-1 py-2 sm:px-4 sm:py-2 font-medium text-slate-700 dark:text-slate-300">
                                  {t(m.name)}
-                                 <div className="sm:hidden text-[10px] text-slate-400 font-normal">#{formatNumber(m.meterNo)}</div>
+                                 <div className="sm:hidden text-[10px] text-slate-400 font-normal">Meter {formatNumber(formatMeterDisplay(m.meterNo))}</div>
                               </td>
                               <td className="hidden sm:table-cell px-4 py-2 text-center text-slate-500 dark:text-slate-400">{formatNumber(m.meterNo)}</td>
                               <td className="px-1 py-2 sm:px-4 sm:py-2 text-right text-slate-600 dark:text-slate-400">{formatNumber(m.previous)}</td>
