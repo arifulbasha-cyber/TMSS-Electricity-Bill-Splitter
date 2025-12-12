@@ -34,6 +34,51 @@ const sortBills = (bills: SavedBill[]) => {
   });
 };
 
+// Pure calculation logic extracted for reuse
+const calculateBillBreakdown = (
+  config: BillConfig, 
+  meters: MeterReading[], 
+  tariffConfig: TariffConfig
+): BillCalculationResult => {
+    const VAT_RATE = tariffConfig.vatRate;
+    const DEMAND_CHARGE = tariffConfig.demandCharge;
+    const METER_RENT = tariffConfig.meterRent;
+
+    const vatTotal = (config.totalBillPayable * VAT_RATE) / (1 + VAT_RATE);
+    const lateFee = config.includeLateFee ? vatTotal : 0;
+    const vatFixed = (DEMAND_CHARGE + METER_RENT) * VAT_RATE;
+    const vatDistributed = Math.max(0, ((config.totalBillPayable / (1 + VAT_RATE)) - (DEMAND_CHARGE + METER_RENT)) * VAT_RATE);
+
+    let totalUnits = 0;
+    meters.forEach(m => totalUnits += Math.max(0, m.current - m.previous));
+
+    const variableCostPool = config.totalBillPayable - DEMAND_CHARGE - METER_RENT - vatFixed;
+    const calculatedRate = totalUnits > 0 ? variableCostPool / totalUnits : 0;
+
+    const numUsers = meters.length;
+    // Use the actual bkashFee from config which is synced with tariff when toggled
+    const totalFixedPool = DEMAND_CHARGE + METER_RENT + vatFixed + config.bkashFee + lateFee;
+    const fixedCostPerUser = numUsers > 0 ? totalFixedPool / numUsers : 0;
+
+    let totalCollection = 0;
+    const userCalculations: UserCalculation[] = meters.map(m => {
+      const units = Math.max(0, m.current - m.previous);
+      const energyCost = units * calculatedRate;
+      const totalPayable = energyCost + fixedCostPerUser;
+      totalCollection += totalPayable;
+      return {
+        id: m.id,
+        name: m.name,
+        unitsUsed: units,
+        energyCost: energyCost,
+        fixedCost: fixedCostPerUser,
+        totalPayable: totalPayable
+      };
+    });
+
+    return { vatFixed, vatDistributed, vatTotal, lateFee, calculatedRate, totalUnits, userCalculations, totalCollection };
+};
+
 // Inner App component to use the hook
 const AppContent: React.FC = () => {
   const { t, language, setLanguage } = useLanguage();
@@ -42,6 +87,9 @@ const AppContent: React.FC = () => {
   // Navigation State
   const [currentView, setCurrentView] = useState<'input' | 'estimator' | 'report' | 'history'>('input');
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+
+  // View State (Separate from Draft State)
+  const [viewedBill, setViewedBill] = useState<SavedBill | null>(null);
 
   // Modal States
   const [activeModal, setActiveModal] = useState<'none' | 'stats' | 'trends' | 'tariff' | 'tenants' | 'cloud'>('none');
@@ -78,6 +126,14 @@ const AppContent: React.FC = () => {
 
   // Prevent initial render from triggering cloud save
   const isFirstRender = useRef(true);
+
+  const handleViewChange = (view: 'input' | 'estimator' | 'report' | 'history') => {
+      setCurrentView(view);
+      // If leaving report or intentionally switching, clear the historical view so inputs show draft data
+      if (view !== 'report') {
+        setViewedBill(null);
+      }
+  };
 
   // Auto-Save Draft to Local Storage and Sync to Cloud (Debounced)
   useEffect(() => {
@@ -290,17 +346,17 @@ const AppContent: React.FC = () => {
     if (window.confirm(t('confirm_load').replace('{month}', record.config.month))) {
       applyBillRecord(record);
       setCurrentView('input');
+      setViewedBill(null); // Clear viewing state
       setActiveModal('none');
     }
   };
 
-  // Restores data and goes to Report view directly
+  // View report WITHOUT overwriting current inputs
   const handleViewHistory = (record: SavedBill) => {
-    if (window.confirm(t('confirm_load').replace('{month}', record.config.month))) {
-      applyBillRecord(record);
-      setCurrentView('report');
-      setActiveModal('none');
-    }
+    // No confirmation needed as we are not overwriting inputs
+    setViewedBill(record);
+    setCurrentView('report');
+    setActiveModal('none');
   };
 
   // Helper to apply record data to state with compatibility checks
@@ -332,6 +388,12 @@ const AppContent: React.FC = () => {
       const updatedHistory = history.filter(h => h.id !== id);
       setHistory(updatedHistory);
       
+      // If deleting the bill currently being viewed, go back to input
+      if (viewedBill?.id === id) {
+          setViewedBill(null);
+          setCurrentView('input');
+      }
+
       if (user && isFirebaseReady) {
          await firebaseService.deleteBill(user.uid, id);
       } else {
@@ -369,56 +431,27 @@ const AppContent: React.FC = () => {
     }
   };
 
-  // Core Logic
+  // --- Dynamic Calculation Logic ---
+  // If we are viewing a historical bill, use its data. Otherwise use current input state.
+  const activeConfig = viewedBill ? viewedBill.config : config;
+  const activeMeters = viewedBill ? viewedBill.meters : meters;
+  const activeMainMeter = viewedBill ? viewedBill.mainMeter : mainMeter;
+
+  // Calculate results based on the ACTIVE data source
   const calculationResult: BillCalculationResult = useMemo(() => {
-    const VAT_RATE = tariffConfig.vatRate;
-    const DEMAND_CHARGE = tariffConfig.demandCharge;
-    const METER_RENT = tariffConfig.meterRent;
+    return calculateBillBreakdown(activeConfig, activeMeters, tariffConfig);
+  }, [activeConfig, activeMeters, tariffConfig]);
 
-    const vatTotal = (config.totalBillPayable * VAT_RATE) / (1 + VAT_RATE);
-    const lateFee = config.includeLateFee ? vatTotal : 0;
-    const vatFixed = (DEMAND_CHARGE + METER_RENT) * VAT_RATE;
-    const vatDistributed = Math.max(0, ((config.totalBillPayable / (1 + VAT_RATE)) - (DEMAND_CHARGE + METER_RENT)) * VAT_RATE);
-
-    let totalUnits = 0;
-    meters.forEach(m => totalUnits += Math.max(0, m.current - m.previous));
-
-    const variableCostPool = config.totalBillPayable - DEMAND_CHARGE - METER_RENT - vatFixed;
-    const calculatedRate = totalUnits > 0 ? variableCostPool / totalUnits : 0;
-
-    const numUsers = meters.length;
-    // Use the actual bkashFee from config which is synced with tariff when toggled
-    const totalFixedPool = DEMAND_CHARGE + METER_RENT + vatFixed + config.bkashFee + lateFee;
-    const fixedCostPerUser = numUsers > 0 ? totalFixedPool / numUsers : 0;
-
-    let totalCollection = 0;
-    const userCalculations: UserCalculation[] = meters.map(m => {
-      const units = Math.max(0, m.current - m.previous);
-      const energyCost = units * calculatedRate;
-      const totalPayable = energyCost + fixedCostPerUser;
-      totalCollection += totalPayable;
-      return {
-        id: m.id,
-        name: m.name,
-        unitsUsed: units,
-        energyCost: energyCost,
-        fixedCost: fixedCostPerUser,
-        totalPayable: totalPayable
-      };
-    });
-
-    return { vatFixed, vatDistributed, vatTotal, lateFee, calculatedRate, totalUnits, userCalculations, totalCollection };
-  }, [config, meters, tariffConfig]);
-
-  // Calculate max units for visualization bar
+  // Calculate max units for visualization bar (always from current meters for input view, or active for report?)
+  // Let's use active meters so stats/report visualization works for history too
   const maxUserUnits = useMemo(() => {
     let max = 0;
-    meters.forEach(m => {
+    activeMeters.forEach(m => {
         const u = Math.max(0, m.current - m.previous);
         if (u > max) max = u;
     });
     return max;
-  }, [meters]);
+  }, [activeMeters]);
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 pb-24 print:bg-white print:pb-0 transition-colors duration-200">
@@ -550,6 +583,7 @@ const AppContent: React.FC = () => {
                     <Database className="w-5 h-5 text-slate-500 dark:text-slate-400" />
                     <h2 className="text-lg font-bold">{t('data_input_part')}</h2>
                 </div>
+                {/* Note: In input view, we always use the mutable state (config, mainMeter, meters) */}
                 <BillConfiguration config={config} onChange={handleConfigChange} tariffConfig={tariffConfig} />
                 <MeterReadings 
                      mainMeter={mainMeter} 
@@ -577,11 +611,13 @@ const AppContent: React.FC = () => {
                <div className="animate-in fade-in duration-300">
                    <CalculationSummary 
                         result={calculationResult} 
-                        config={config} 
-                        mainMeter={mainMeter}
-                        meters={meters}
+                        config={activeConfig} 
+                        mainMeter={activeMainMeter}
+                        meters={activeMeters}
                         onSaveHistory={saveToHistory}
                         tariffConfig={tariffConfig}
+                        isHistorical={!!viewedBill}
+                        onClose={() => handleViewChange('input')}
                    />
                </div>
             )}
@@ -604,7 +640,7 @@ const AppContent: React.FC = () => {
       {/* Mobile Navigation */}
       <MobileNav 
          currentView={currentView} 
-         onChangeView={setCurrentView}
+         onChangeView={handleViewChange}
       />
 
       {/* Modals */}

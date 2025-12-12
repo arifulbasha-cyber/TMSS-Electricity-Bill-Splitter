@@ -1,7 +1,7 @@
 
 import React, { useRef, useState } from 'react';
 import { BillCalculationResult, BillConfig, MeterReading, TariffConfig } from '../types';
-import { FileText, Printer, Image as ImageIcon, Save, Loader2 } from 'lucide-react';
+import { FileText, Printer, Image as ImageIcon, Save, Loader2, X } from 'lucide-react';
 import html2canvas from 'html2canvas';
 import { useLanguage } from '../i18n';
 
@@ -12,9 +12,11 @@ interface CalculationSummaryProps {
   meters: MeterReading[];
   onSaveHistory: () => void;
   tariffConfig: TariffConfig;
+  isHistorical?: boolean;
+  onClose?: () => void;
 }
 
-const CalculationSummary: React.FC<CalculationSummaryProps> = ({ result, config, mainMeter, meters, onSaveHistory, tariffConfig }) => {
+const CalculationSummary: React.FC<CalculationSummaryProps> = ({ result, config, mainMeter, meters, onSaveHistory, tariffConfig, isHistorical = false, onClose }) => {
   const { t, formatNumber, translateMonth, formatDateLocalized } = useLanguage();
   const reportRef = useRef<HTMLDivElement>(null);
   const [isGeneratingImage, setIsGeneratingImage] = useState(false);
@@ -66,8 +68,6 @@ const CalculationSummary: React.FC<CalculationSummaryProps> = ({ result, config,
       bumpTextSize(clone); 
 
       // Force Light Mode styles on clone for export to match "Paper" look usually desired for images
-      // Or keep current theme? Let's keep current theme to match what user sees.
-      // However, html2canvas needs the background color set explicitly if transparent.
       
       const scrollables = clone.querySelectorAll('.overflow-x-auto');
       scrollables.forEach(el => {
@@ -125,16 +125,28 @@ const CalculationSummary: React.FC<CalculationSummaryProps> = ({ result, config,
        {/* Actions Bar (No Print) */}
        <div className="bg-slate-50/80 dark:bg-slate-900/80 backdrop-blur px-4 sm:px-6 py-4 border-b border-slate-200 dark:border-slate-800 flex flex-wrap gap-3 justify-between items-center no-print">
           <h2 className="font-semibold text-slate-700 dark:text-slate-200 flex items-center gap-2 text-sm sm:text-base">
-             <FileText className="w-5 h-5 text-indigo-600 dark:text-indigo-400" /> {t('bill_report')}
+             <FileText className="w-5 h-5 text-indigo-600 dark:text-indigo-400" /> {t('bill_report')} {isHistorical && <span className="bg-indigo-100 dark:bg-indigo-900/50 text-indigo-700 dark:text-indigo-300 text-xs px-2 py-0.5 rounded-full ml-2">Viewing History</span>}
           </h2>
           <div className="flex items-center gap-2 w-full sm:w-auto">
-            <button 
-              onClick={onSaveHistory}
-              className="flex-1 sm:flex-none flex items-center justify-center gap-2 text-sm font-medium text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 hover:text-indigo-600 dark:hover:text-indigo-400 px-3 py-2 rounded-lg transition-colors shadow-sm"
-              title={t('save_history')}
-            >
-               <Save className="w-4 h-4" /> <span className="sm:hidden lg:inline">{t('save_history')}</span>
-            </button>
+            {onClose && isHistorical && (
+               <button 
+                  onClick={onClose}
+                  className="flex-1 sm:flex-none flex items-center justify-center gap-2 text-sm font-medium text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 px-3 py-2 rounded-lg transition-colors shadow-sm"
+               >
+                  <X className="w-4 h-4" /> <span className="sm:hidden lg:inline">{t('cancel')}</span>
+               </button>
+            )}
+            
+            {!isHistorical && (
+              <button 
+                onClick={onSaveHistory}
+                className="flex-1 sm:flex-none flex items-center justify-center gap-2 text-sm font-medium text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 hover:text-indigo-600 dark:hover:text-indigo-400 px-3 py-2 rounded-lg transition-colors shadow-sm"
+                title={t('save_history')}
+              >
+                 <Save className="w-4 h-4" /> <span className="sm:hidden lg:inline">{t('save_history')}</span>
+              </button>
+            )}
+
             <button 
               onClick={handleSaveImage} 
               disabled={isGeneratingImage}
