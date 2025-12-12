@@ -1,16 +1,17 @@
 
 import React from 'react';
 import { SavedBill } from '../types';
-import { History, RotateCcw, Trash2, Calendar } from 'lucide-react';
+import { History, RotateCcw, Trash2, Calendar, FileText } from 'lucide-react';
 import { useLanguage } from '../i18n';
 
 interface BillHistoryProps {
   history: SavedBill[];
   onLoad: (bill: SavedBill) => void;
   onDelete: (id: string) => void;
+  onViewReport: (bill: SavedBill) => void;
 }
 
-const BillHistory: React.FC<BillHistoryProps> = ({ history, onLoad, onDelete }) => {
+const BillHistory: React.FC<BillHistoryProps> = ({ history, onLoad, onDelete, onViewReport }) => {
   const { t } = useLanguage();
   if (history.length === 0) return null;
 
@@ -30,7 +31,11 @@ const BillHistory: React.FC<BillHistoryProps> = ({ history, onLoad, onDelete }) 
       </div>
       <div className="space-y-3">
         {history.map((bill) => (
-          <div key={bill.id} className="group p-4 rounded-lg bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 hover:border-indigo-200 dark:hover:border-indigo-700 hover:bg-white dark:hover:bg-slate-800 hover:shadow-sm transition-all">
+          <div 
+            key={bill.id} 
+            onClick={() => onViewReport(bill)}
+            className="group p-4 rounded-lg bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 hover:border-indigo-200 dark:hover:border-indigo-700 hover:bg-white dark:hover:bg-slate-800 hover:shadow-sm transition-all cursor-pointer relative"
+          >
             <div className="flex justify-between items-start mb-2">
               <div>
                 <h4 className="font-bold text-slate-800 dark:text-slate-200">{bill.config.month}</h4>
@@ -44,7 +49,13 @@ const BillHistory: React.FC<BillHistoryProps> = ({ history, onLoad, onDelete }) 
               </span>
             </div>
             
-            <div className="flex items-center gap-2 mt-3 pt-3 border-t border-slate-100 dark:border-slate-700">
+            <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity hidden sm:block">
+               <div className="flex items-center gap-1 text-xs font-bold text-indigo-500">
+                   <FileText className="w-3 h-3" /> {t('report')}
+               </div>
+            </div>
+            
+            <div className="flex items-center gap-2 mt-3 pt-3 border-t border-slate-100 dark:border-slate-700" onClick={(e) => e.stopPropagation()}>
               <button
                 onClick={() => onLoad(bill)}
                 className="flex-1 flex items-center justify-center gap-1.5 text-xs font-medium bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-300 py-1.5 rounded hover:bg-indigo-50 dark:hover:bg-indigo-900/30 hover:text-indigo-700 dark:hover:text-indigo-300 hover:border-indigo-200 dark:hover:border-indigo-700 transition-colors"

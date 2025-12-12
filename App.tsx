@@ -285,8 +285,26 @@ const AppContent: React.FC = () => {
     alert(t('saved_success'));
   };
 
+  // Restores data and goes to Input view
   const loadFromHistory = (record: SavedBill) => {
     if (window.confirm(t('confirm_load').replace('{month}', record.config.month))) {
+      applyBillRecord(record);
+      setCurrentView('input');
+      setActiveModal('none');
+    }
+  };
+
+  // Restores data and goes to Report view directly
+  const handleViewHistory = (record: SavedBill) => {
+    if (window.confirm(t('confirm_load').replace('{month}', record.config.month))) {
+      applyBillRecord(record);
+      setCurrentView('report');
+      setActiveModal('none');
+    }
+  };
+
+  // Helper to apply record data to state with compatibility checks
+  const applyBillRecord = (record: SavedBill) => {
       const legacyConfig = record.config as any;
       const includeLateFee = legacyConfig.includeLateFee !== undefined 
           ? legacyConfig.includeLateFee 
@@ -307,9 +325,6 @@ const AppContent: React.FC = () => {
       setConfig(cleanConfig);
       setMainMeter(record.mainMeter);
       setMeters(record.meters);
-      setCurrentView('input');
-      setActiveModal('none');
-    }
   };
 
   const deleteFromHistory = async (id: string) => {
@@ -574,7 +589,12 @@ const AppContent: React.FC = () => {
             {/* VIEW: HISTORY (Moved from Modal/Logic) */}
             {currentView === 'history' && (
                <div className="animate-in fade-in duration-300">
-                   <BillHistory history={history} onLoad={loadFromHistory} onDelete={deleteFromHistory} />
+                   <BillHistory 
+                        history={history} 
+                        onLoad={loadFromHistory} 
+                        onDelete={deleteFromHistory} 
+                        onViewReport={handleViewHistory}
+                   />
                </div>
             )}
           </>
