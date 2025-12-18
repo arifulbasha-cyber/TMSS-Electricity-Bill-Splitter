@@ -26,23 +26,23 @@ const BillConfiguration: React.FC<BillConfigurationProps> = ({ config, onChange,
   const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 
   return (
-    <div className="bg-white dark:bg-slate-900 rounded-[2rem] border border-slate-200 dark:border-slate-800 p-6 transition-all">
+    <div className="bg-white dark:bg-slate-900 rounded-[2rem] border border-slate-200 dark:border-slate-800 p-6 transition-all shadow-sm">
       <div className="flex items-center gap-3 mb-6">
-        <div className="bg-indigo-100 dark:bg-indigo-900/50 p-2.5 rounded-2xl">
-          <Settings className="w-6 h-6 text-indigo-600 dark:text-indigo-400" />
+        <div className="bg-emerald-100 dark:bg-emerald-900/50 p-2.5 rounded-2xl">
+          <Settings className="w-6 h-6 text-emerald-600 dark:text-emerald-400" />
         </div>
         <h2 className="text-xl font-black text-slate-800 dark:text-slate-100 tracking-tight">{t('costs_configuration')}</h2>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
         {/* Date Selection Group */}
-        <div className="col-span-1 md:col-span-2 lg:col-span-3 grid grid-cols-2 gap-4 bg-slate-50 dark:bg-slate-800/30 p-5 rounded-[1.5rem] border border-slate-100 dark:border-slate-800">
+        <div className="col-span-1 md:col-span-2 lg:col-span-3 grid grid-cols-2 gap-4 bg-emerald-50/30 dark:bg-slate-800/30 p-5 rounded-[1.5rem] border border-emerald-100/50 dark:border-slate-800">
            <div className="relative group">
-            <label className="absolute left-3 top-2 text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest transition-colors group-focus-within:text-indigo-600">{t('bill_month')}</label>
+            <label className="absolute left-3 top-2 text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest transition-colors group-focus-within:text-emerald-600">{t('bill_month')}</label>
             <select
               value={config.month}
               onChange={handleChange('month')}
-              className="w-full h-14 rounded-xl border-b-2 border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white text-sm font-bold pt-6 pb-2 px-3 focus:border-indigo-500 outline-none transition-all appearance-none"
+              className="w-full h-14 rounded-xl border-b-2 border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white text-sm font-bold pt-6 pb-2 px-3 focus:border-emerald-500 outline-none transition-all appearance-none"
             >
               {months.map(m => (
                 <option key={m} value={m}>{translateMonth(m)}</option>
@@ -50,19 +50,19 @@ const BillConfiguration: React.FC<BillConfigurationProps> = ({ config, onChange,
             </select>
           </div>
           <div className="relative group">
-            <label className="absolute left-3 top-2 text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest transition-colors group-focus-within:text-indigo-600">{t('date_generated')}</label>
+            <label className="absolute left-3 top-2 text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest transition-colors group-focus-within:text-emerald-600">{t('date_generated')}</label>
             <input
               type="date"
               value={config.dateGenerated}
               onChange={handleChange('dateGenerated')}
-              className="w-full h-14 rounded-xl border-b-2 border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white text-sm font-bold pt-6 pb-2 px-3 focus:border-indigo-500 outline-none transition-all color-scheme-dark"
+              className="w-full h-14 rounded-xl border-b-2 border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white text-sm font-bold pt-6 pb-2 px-3 focus:border-emerald-500 outline-none transition-all color-scheme-dark"
             />
           </div>
         </div>
 
         {/* Amount Input */}
         <div className="relative group">
-          <label className="absolute left-4 top-2 text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest group-focus-within:text-indigo-600">{t('total_bill_payable')}</label>
+          <label className="absolute left-4 top-2 text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest group-focus-within:text-emerald-600">{t('total_bill_payable')}</label>
           <div className="relative flex items-center">
             <input
               type="number"
@@ -70,18 +70,18 @@ const BillConfiguration: React.FC<BillConfigurationProps> = ({ config, onChange,
               value={config.totalBillPayable}
               onChange={handleChange('totalBillPayable')}
               onFocus={handleFocus}
-              className="w-full h-16 rounded-xl border-b-2 border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 text-2xl font-black text-slate-900 dark:text-white pt-7 pb-2 px-4 focus:bg-white dark:focus:bg-slate-800 focus:border-indigo-500 outline-none transition-all"
+              className="w-full h-16 rounded-xl border-b-2 border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 text-2xl font-black text-slate-900 dark:text-white pt-7 pb-2 px-4 focus:bg-white dark:focus:bg-slate-800 focus:border-emerald-500 outline-none transition-all"
             />
-            <span className="absolute right-4 top-8 text-xl text-slate-400 font-black">৳</span>
+            <span className="absolute right-4 top-8 text-xl text-emerald-600 dark:text-emerald-400 font-black">৳</span>
           </div>
         </div>
 
-        {/* Tonal Choice Chips (Native Android Style) */}
+        {/* Tonal Choice Chips */}
         <button 
            onClick={() => onChange('includeBkashFee', !config.includeBkashFee)}
            className={`h-16 rounded-[1.25rem] px-5 flex items-center gap-3 transition-all ${
              config.includeBkashFee 
-               ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/30' 
+               ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-500/30' 
                : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700'
            }`}
         >
@@ -96,7 +96,7 @@ const BillConfiguration: React.FC<BillConfigurationProps> = ({ config, onChange,
            onClick={() => onChange('includeLateFee', !config.includeLateFee)}
            className={`h-16 rounded-[1.25rem] px-5 flex items-center gap-3 transition-all ${
              config.includeLateFee 
-               ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/30' 
+               ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-500/30' 
                : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700'
            }`}
         >

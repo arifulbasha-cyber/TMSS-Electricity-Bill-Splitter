@@ -2,20 +2,21 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { BillConfig, MeterReading, BillCalculationResult, UserCalculation, SavedBill, TariffConfig, Tenant } from './types';
 import { INITIAL_CONFIG, INITIAL_METERS, INITIAL_MAIN_METER, DEFAULT_TARIFF_CONFIG } from './constants';
+import Dashboard from './components/Dashboard';
 import BillConfiguration from './components/BillConfiguration';
 import MeterReadings from './components/MeterReadings';
 import ConsumptionStats from './components/ConsumptionStats';
 import CalculationSummary from './components/CalculationSummary';
 import BillHistory from './components/BillHistory';
 import BillEstimator from './components/BillEstimator';
-import TariffModal from './components/TariffModal';
+import TariffSettings from './components/TariffSettings';
 import TenantManager from './components/TenantManager';
 import TrendsDashboard from './components/TrendsDashboard';
 import CloudSetupModal from './components/CloudSetupModal';
 import MobileNav from './components/MobileNav';
 import SkeletonLoader from './components/SkeletonLoader';
 import ModalWrapper from './components/ModalWrapper';
-import { Lightbulb, Database, Download, Settings, Users, Cloud, LogIn, LogOut, Moon, Sun, Menu, ArrowRight, PieChart, BarChart3, RefreshCw } from 'lucide-react';
+import { Lightbulb, Database, Download, Settings, Users, Cloud, LogIn, LogOut, Moon, Sun, Menu, ArrowRight, PieChart, BarChart3, RefreshCw, Plus, ArrowLeft } from 'lucide-react';
 import { LanguageProvider, useLanguage } from './i18n';
 import { ThemeProvider, useTheme } from './components/ThemeContext';
 import { firebaseService } from './services/firebase';
@@ -76,10 +77,11 @@ const calculateBillBreakdown = (
 const AppContent: React.FC = () => {
   const { t, language, setLanguage } = useLanguage();
   const { theme, toggleTheme } = useTheme();
-  const [currentView, setCurrentView] = useState<'input' | 'estimator' | 'report' | 'history'>('input');
+  type AppView = 'home' | 'input' | 'estimator' | 'report' | 'history' | 'stats' | 'trends' | 'tenants' | 'tariff';
+  const [currentView, setCurrentView] = useState<AppView>('home');
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [viewedBill, setViewedBill] = useState<SavedBill | null>(null);
-  const [activeModal, setActiveModal] = useState<'none' | 'stats' | 'trends' | 'tariff' | 'tenants' | 'cloud'>('none');
+  const [activeModal, setActiveModal] = useState<'none' | 'cloud'>('none');
 
   const [config, setConfig] = useState<BillConfig>(() => {
     const saved = localStorage.getItem('tmss_draft_config');
@@ -103,11 +105,12 @@ const AppContent: React.FC = () => {
   const [isSyncing, setIsSyncing] = useState(false);
   const isFirstRender = useRef(true);
 
-  const handleViewChange = (view: 'input' | 'estimator' | 'report' | 'history') => {
+  const handleViewChange = (view: AppView) => {
       setCurrentView(view);
       if (view !== 'report') {
         setViewedBill(null);
       }
+      window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   useEffect(() => {
@@ -269,16 +272,14 @@ const AppContent: React.FC = () => {
   const loadFromHistory = (record: SavedBill) => {
     if (window.confirm(t('confirm_load').replace('{month}', record.config.month))) {
       applyBillRecord(record);
-      setCurrentView('input');
+      setCurrentView('home');
       setViewedBill(null);
-      setActiveModal('none');
     }
   };
 
   const handleViewHistory = (record: SavedBill) => {
     setViewedBill(record);
     setCurrentView('report');
-    setActiveModal('none');
   };
 
   const applyBillRecord = (record: SavedBill) => {
@@ -304,7 +305,7 @@ const AppContent: React.FC = () => {
       setHistory(updatedHistory);
       if (viewedBill?.id === id) {
           setViewedBill(null);
-          setCurrentView('input');
+          setCurrentView('home');
       }
       if (user && isFirebaseReady) {
          await firebaseService.deleteBill(user.uid, id);
@@ -356,36 +357,133 @@ const AppContent: React.FC = () => {
     return max;
   }, [activeMeters]);
 
+  const renderView = () => {
+    switch(currentView) {
+      case 'home':
+        return (
+          <div className="animate-in fade-in duration-500">
+            <Dashboard config={config} result={calculationResult} mainMeter={mainMeter} />
+          </div>
+        );
+      case 'input':
+        return (
+          <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <BillConfiguration config={config} onChange={handleConfigChange} tariffConfig={tariffConfig} />
+            <MeterReadings 
+                mainMeter={mainMeter} 
+                onMainMeterUpdate={setMainMeter} 
+                readings={meters} 
+                onUpdate={setMeters} 
+                tenants={tenants} 
+                onManageTenants={() => handleViewChange('tenants')}
+                maxUnits={maxUserUnits}
+                calculatedRate={calculationResult.calculatedRate}
+                tariffConfig={tariffConfig}
+            />
+          </div>
+        );
+      case 'estimator':
+        return (
+          <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+              <BillEstimator tariffConfig={tariffConfig} />
+          </div>
+        );
+      case 'report':
+        return (
+          <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+              <CalculationSummary 
+                  result={calculationResult} 
+                  config={activeConfig} 
+                  mainMeter={activeMainMeter}
+                  meters={activeMeters}
+                  onSaveHistory={saveToHistory}
+                  tariffConfig={tariffConfig}
+                  isHistorical={!!viewedBill}
+                  onClose={() => handleViewChange('home')}
+              />
+          </div>
+        );
+      case 'history':
+        return (
+          <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+              <BillHistory 
+                  history={history} 
+                  onLoad={loadFromHistory} 
+                  onDelete={deleteFromHistory} 
+                  onViewReport={handleViewHistory}
+              />
+          </div>
+        );
+      case 'stats':
+        return (
+          <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 space-y-4">
+             <button onClick={() => handleViewChange('home')} className="flex items-center gap-2 text-sm font-bold text-slate-500 hover:text-emerald-600 transition-colors px-2">
+                <ArrowLeft className="w-4 h-4" /> {t('back')}
+             </button>
+             <ConsumptionStats calculations={calculationResult.userCalculations} totalUnits={calculationResult.totalUnits} />
+          </div>
+        );
+      case 'trends':
+        return (
+          <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 space-y-4">
+             <button onClick={() => handleViewChange('home')} className="flex items-center gap-2 text-sm font-bold text-slate-500 hover:text-emerald-600 transition-colors px-2">
+                <ArrowLeft className="w-4 h-4" /> {t('back')}
+             </button>
+             <TrendsDashboard history={history} />
+          </div>
+        );
+      case 'tenants':
+        return (
+          <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 space-y-4">
+             <button onClick={() => handleViewChange('home')} className="flex items-center gap-2 text-sm font-bold text-slate-500 hover:text-emerald-600 transition-colors px-2">
+                <ArrowLeft className="w-4 h-4" /> {t('back')}
+             </button>
+             <TenantManager tenants={tenants} onUpdateTenants={handleTenantsUpdate} />
+          </div>
+        );
+      case 'tariff':
+        return (
+          <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 space-y-4">
+             <button onClick={() => handleViewChange('home')} className="flex items-center gap-2 text-sm font-bold text-slate-500 hover:text-emerald-600 transition-colors px-2">
+                <ArrowLeft className="w-4 h-4" /> {t('back')}
+             </button>
+             <TariffSettings config={tariffConfig} onSave={handleTariffSave} />
+          </div>
+        );
+      default:
+        return null;
+    }
+  };
+
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 pb-28 transition-colors duration-200">
-      {/* Native Top App Bar with Accent Background Effect */}
-      <header className="bg-indigo-600 dark:bg-indigo-800 sticky top-0 z-30 no-print px-4 h-16 flex items-center justify-between shadow-lg transition-colors duration-200">
+      <header className="bg-emerald-50/70 dark:bg-slate-900/80 backdrop-blur-2xl sticky top-0 z-30 no-print px-4 h-16 flex items-center justify-between border-b border-emerald-100 dark:border-slate-800 transition-colors duration-200">
         <div className="flex items-center gap-3">
-            <div className="bg-white/20 p-2 rounded-2xl backdrop-blur-md">
+            <div className="bg-emerald-600 dark:bg-emerald-500 p-2.5 rounded-2xl shadow-lg shadow-emerald-500/20">
               <Lightbulb className="w-5 h-5 text-white" />
             </div>
             <div className="overflow-hidden">
-               <h1 className="text-base sm:text-lg font-black text-white leading-none truncate pr-2">{t('app_title')}</h1>
+               <h1 className="text-base sm:text-lg font-black text-slate-900 dark:text-white leading-none truncate pr-2">{t('app_title')}</h1>
                <div className="flex items-center gap-1.5 mt-1">
                  {user ? (
-                    <div className="flex items-center gap-1 text-[9px] font-black text-indigo-100 uppercase tracking-widest">
+                    <div className="flex items-center gap-1 text-[9px] font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-widest">
                         <Cloud className="w-2.5 h-2.5" />
                         {t('cloud')}
                     </div>
                  ) : (
-                    <div className="flex items-center gap-1 text-[9px] font-black text-indigo-200 uppercase tracking-widest">
+                    <div className="flex items-center gap-1 text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">
                         <Database className="w-2.5 h-2.5" />
                         {t('local')}
                     </div>
                  )}
-                 {isSyncing && <RefreshCw className="w-2.5 h-2.5 text-white/70 animate-spin" />}
+                 {isSyncing && <RefreshCw className="w-2.5 h-2.5 text-emerald-400 animate-spin" />}
                </div>
             </div>
         </div>
           
         <div className="flex items-center gap-1">
           {installPrompt && (
-            <button onClick={handleInstallClick} className="p-3 text-white hover:bg-white/10 rounded-2xl">
+            <button onClick={handleInstallClick} className="p-3 text-slate-600 dark:text-slate-400 hover:bg-emerald-100/50 dark:hover:bg-slate-800 rounded-2xl transition-colors">
               <Download className="w-5 h-5" />
             </button>
           )}
@@ -393,7 +491,7 @@ const AppContent: React.FC = () => {
           <div className="relative">
             <button 
               onClick={() => setIsMenuOpen(!isMenuOpen)}
-              className="p-3 text-white bg-white/10 hover:bg-white/20 rounded-2xl transition-all active:scale-90"
+              className="p-3 text-slate-600 dark:text-slate-400 hover:bg-emerald-100/50 dark:hover:bg-slate-800 rounded-2xl transition-all active:scale-90"
             >
               <Menu className="w-6 h-6" />
             </button>
@@ -406,22 +504,22 @@ const AppContent: React.FC = () => {
                     <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{t('actions')}</div>
                   </div>
                   
-                  <button onClick={() => { setActiveModal('stats'); setIsMenuOpen(false); }} className="w-full text-left px-5 py-3 text-sm font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 flex items-center gap-3 transition-colors">
-                    <PieChart className="w-5 h-5 text-purple-500" /> {t('consumption_share')}
+                  <button onClick={() => { handleViewChange('stats'); setIsMenuOpen(false); }} className="w-full text-left px-5 py-3 text-sm font-bold text-slate-700 dark:text-slate-200 hover:bg-emerald-50 dark:hover:bg-slate-800 flex items-center gap-3 transition-colors">
+                    <PieChart className="w-5 h-5 text-emerald-500" /> {t('consumption_share')}
                   </button>
-                  <button onClick={() => { setActiveModal('trends'); setIsMenuOpen(false); }} className="w-full text-left px-5 py-3 text-sm font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 flex items-center gap-3 transition-colors">
-                    <BarChart3 className="w-5 h-5 text-blue-500" /> {t('trends')}
+                  <button onClick={() => { handleViewChange('trends'); setIsMenuOpen(false); }} className="w-full text-left px-5 py-3 text-sm font-bold text-slate-700 dark:text-slate-200 hover:bg-emerald-50 dark:hover:bg-slate-800 flex items-center gap-3 transition-colors">
+                    <BarChart3 className="w-5 h-5 text-teal-500" /> {t('trends')}
                   </button>
-                  <button onClick={handleNextMonth} className="w-full text-left px-5 py-3 text-sm font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 flex items-center gap-3 transition-colors">
-                    <ArrowRight className="w-5 h-5 text-green-500" /> {t('next_month')}
+                  <button onClick={handleNextMonth} className="w-full text-left px-5 py-3 text-sm font-bold text-slate-700 dark:text-slate-200 hover:bg-emerald-50 dark:hover:bg-slate-800 flex items-center gap-3 transition-colors">
+                    <ArrowRight className="w-5 h-5 text-emerald-600" /> {t('next_month')}
                   </button>
                   
                   <div className="mx-4 my-2 border-t border-slate-100 dark:border-slate-800"></div>
                   
-                  <button onClick={() => { setActiveModal('tenants'); setIsMenuOpen(false); }} className="w-full text-left px-5 py-3 text-sm font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 flex items-center gap-3 transition-colors">
-                    <Users className="w-5 h-5 text-orange-500" /> {t('tenants')}
+                  <button onClick={() => { handleViewChange('tenants'); setIsMenuOpen(false); }} className="w-full text-left px-5 py-3 text-sm font-bold text-slate-700 dark:text-slate-200 hover:bg-emerald-50 dark:hover:bg-slate-800 flex items-center gap-3 transition-colors">
+                    <Users className="w-5 h-5 text-sage-500" /> {t('tenants')}
                   </button>
-                  <button onClick={() => { setActiveModal('tariff'); setIsMenuOpen(false); }} className="w-full text-left px-5 py-3 text-sm font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 flex items-center gap-3 transition-colors">
+                  <button onClick={() => { handleViewChange('tariff'); setIsMenuOpen(false); }} className="w-full text-left px-5 py-3 text-sm font-bold text-slate-700 dark:text-slate-200 hover:bg-emerald-50 dark:hover:bg-slate-800 flex items-center gap-3 transition-colors">
                     <Settings className="w-5 h-5 text-slate-500" /> {t('settings')}
                   </button>
                   
@@ -436,8 +534,8 @@ const AppContent: React.FC = () => {
 
                   <div className="flex items-center justify-between px-5 py-2">
                      <div className="flex rounded-xl bg-slate-100 dark:bg-slate-800 p-1 w-full">
-                       <button onClick={() => setLanguage('en')} className={`flex-1 py-1 text-[10px] font-black rounded-lg transition-all ${language === 'en' ? 'bg-white dark:bg-slate-700 text-indigo-600 shadow-sm' : 'text-slate-500'}`}>ENGLISH</button>
-                       <button onClick={() => setLanguage('bn')} className={`flex-1 py-1 text-[10px] font-black rounded-lg transition-all ${language === 'bn' ? 'bg-white dark:bg-slate-700 text-indigo-600 shadow-sm' : 'text-slate-500'}`}>বাংলা</button>
+                       <button onClick={() => setLanguage('en')} className={`flex-1 py-1 text-[10px] font-black rounded-lg transition-all ${language === 'en' ? 'bg-white dark:bg-slate-700 text-emerald-600 shadow-sm' : 'text-slate-50'}`}>ENGLISH</button>
+                       <button onClick={() => setLanguage('bn')} className={`flex-1 py-1 text-[10px] font-black rounded-lg transition-all ${language === 'bn' ? 'bg-white dark:bg-slate-700 text-emerald-600 shadow-sm' : 'text-slate-50'}`}>বাংলা</button>
                      </div>
                   </div>
 
@@ -446,7 +544,7 @@ const AppContent: React.FC = () => {
                         <LogOut className="w-5 h-5" /> {t('logout')}
                      </button>
                   ) : (
-                     <button onClick={handleLogin} className="w-full text-left px-5 py-4 text-sm font-bold text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/10 flex items-center gap-3 mt-1">
+                     <button onClick={handleLogin} className="w-full text-left px-5 py-4 text-sm font-bold text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-900/10 flex items-center gap-3 mt-1">
                         <LogIn className="w-5 h-5" /> {t('login')}
                      </button>
                   )}
@@ -461,71 +559,22 @@ const AppContent: React.FC = () => {
         {isSyncing && history.length === 0 ? (
            <SkeletonLoader />
         ) : (
-          <>
-            {currentView === 'input' && (
-              <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                <BillConfiguration config={config} onChange={handleConfigChange} tariffConfig={tariffConfig} />
-                <MeterReadings 
-                     mainMeter={mainMeter} 
-                     onMainMeterUpdate={setMainMeter} 
-                     readings={meters} 
-                     onUpdate={setMeters} 
-                     tenants={tenants} 
-                     onManageTenants={() => setActiveModal('tenants')}
-                     maxUnits={maxUserUnits}
-                     calculatedRate={calculationResult.calculatedRate}
-                     tariffConfig={tariffConfig}
-                />
-              </div>
-            )}
-
-            {currentView === 'estimator' && (
-               <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-                   <BillEstimator tariffConfig={tariffConfig} />
-               </div>
-            )}
-
-            {currentView === 'report' && (
-               <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-                   <CalculationSummary 
-                        result={calculationResult} 
-                        config={activeConfig} 
-                        mainMeter={activeMainMeter}
-                        meters={activeMeters}
-                        onSaveHistory={saveToHistory}
-                        tariffConfig={tariffConfig}
-                        isHistorical={!!viewedBill}
-                        onClose={() => handleViewChange('input')}
-                   />
-               </div>
-            )}
-
-            {currentView === 'history' && (
-               <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-                   <BillHistory 
-                        history={history} 
-                        onLoad={loadFromHistory} 
-                        onDelete={deleteFromHistory} 
-                        onViewReport={handleViewHistory}
-                   />
-               </div>
-            )}
-          </>
+          renderView()
         )}
       </main>
 
-      <MobileNav currentView={currentView} onChangeView={handleViewChange} />
+      <MobileNav currentView={currentView as any} onChangeView={handleViewChange} />
 
-      <ModalWrapper isOpen={activeModal === 'stats'} onClose={() => setActiveModal('none')} title={t('consumption_share')}>
-         <ConsumptionStats calculations={calculationResult.userCalculations} totalUnits={calculationResult.totalUnits} />
-      </ModalWrapper>
+      {currentView === 'home' && (
+        <button 
+          onClick={() => handleViewChange('input')}
+          className="fixed bottom-24 right-6 w-14 h-14 bg-emerald-600 text-white rounded-2xl shadow-2xl flex items-center justify-center z-40 transition-all hover:scale-105 active:scale-90"
+          title={t('input')}
+        >
+          <Plus className="w-8 h-8" />
+        </button>
+      )}
 
-      <ModalWrapper isOpen={activeModal === 'trends'} onClose={() => setActiveModal('none')} title={t('trends_dashboard')}>
-         <TrendsDashboard history={history} />
-      </ModalWrapper>
-
-      <TariffModal isOpen={activeModal === 'tariff'} onClose={() => setActiveModal('none')} config={tariffConfig} onSave={handleTariffSave} />
-      <TenantManager isOpen={activeModal === 'tenants'} onClose={() => setActiveModal('none')} tenants={tenants} onUpdateTenants={handleTenantsUpdate} />
       <CloudSetupModal isOpen={activeModal === 'cloud'} onClose={() => setActiveModal('none')} onConnected={onCloudConnected} />
     </div>
   );

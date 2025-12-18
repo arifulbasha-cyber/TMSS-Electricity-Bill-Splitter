@@ -25,7 +25,7 @@ const translations: Record<Language, Record<string, string>> = {
     'tenants': 'Tenants',
     'trends': 'Trends',
     'calculator': 'Input',
-    'input': 'Input',
+    'input': 'Input Data',
     'report': 'Report',
     'history': 'History',
     'previous_month': 'Previous Month',
@@ -91,7 +91,7 @@ const translations: Record<Language, Record<string, string>> = {
     'bkash_fee': 'bKash Fee',
     'late_fee': 'Late Fee',
     'bdt': 'BDT',
-    'scan_bill': 'Scan Bill',
+    'add_data': 'Add Bill Data',
 
     // Meter Readings
     'meter_readings': 'Meter Readings',
@@ -215,16 +215,6 @@ const translations: Record<Language, Record<string, string>> = {
     'Uttom': 'Uttom',
     'Anayet': 'Anayet',
     'Arif': 'Arif',
-
-    // OCR
-    'scan_meter': 'Scan Meter',
-    'capture': 'Capture',
-    'processing': 'Processing...',
-    'retry': 'Retry',
-    'use_value': 'Use Value',
-    'camera_permission_denied': 'Camera permission denied. Please allow access to use the scanner.',
-    'no_text_detected': 'No readable text found. Try getting closer to the meter.',
-    'scan_instruction': 'Align the meter reading within the frame. Ensure good lighting.',
   },
   bn: {
     // Header
@@ -238,7 +228,7 @@ const translations: Record<Language, Record<string, string>> = {
     'tenants': 'ভাড়াটিয়া',
     'trends': 'ট্রেন্ডস',
     'calculator': 'ইনপুট',
-    'input': 'ইনপুট',
+    'input': 'ডেটা ইনপুট',
     'report': 'রিপোর্ট',
     'history': 'ইতিহাস',
     'previous_month': 'পূর্ববর্তী মাস',
@@ -304,7 +294,7 @@ const translations: Record<Language, Record<string, string>> = {
     'bkash_fee': 'বিকাশ ফি',
     'late_fee': 'বিলম্ব মাশুল',
     'bdt': 'টাকা',
-    'scan_bill': 'বিল স্ক্যান',
+    'add_data': 'ডেটা ইনপুট',
 
     // Meter Readings
     'meter_readings': 'মিটার রিডিং',
@@ -418,7 +408,7 @@ const translations: Record<Language, Record<string, string>> = {
     'energy_cost': 'এনার্জি খরচ',
     'fixed_cost': 'ফিক্সড খরচ',
     'total': 'মোট',
-    'bill': 'বিল',
+    'bill': 'Bill',
     'total_collection': 'মোট সংগ্রহ',
     'name': 'নাম',
     'user': 'ব্যবহারকারী',
@@ -443,16 +433,6 @@ const translations: Record<Language, Record<string, string>> = {
     'October': 'অক্টোবর',
     'November': 'নভেম্বর',
     'December': 'ডিসেম্বর',
-
-    // OCR
-    'scan_meter': 'মিটার স্ক্যান',
-    'capture': 'ছবি তুলুন',
-    'processing': 'প্রসেসিং...',
-    'retry': 'পুনরায় চেষ্টা করুন',
-    'use_value': 'মান ব্যবহার করুন',
-    'camera_permission_denied': 'ক্যামেরার অনুমতি প্রত্যাখ্যান করা হয়েছে। স্ক্যানার ব্যবহার করতে দয়া করে অ্যাক্সেস দিন।',
-    'no_text_detected': 'কোনো পাঠযোগ্য লেখা পাওয়া যায়নি। মিটারের কাছাকাছি যাওয়ার চেষ্টা করুন।',
-    'scan_instruction': 'মিটারের রিডিং ফ্রেমের মধ্যে রাখুন। পর্যাপ্ত আলো নিশ্চিত করুন।',
   }
 };
 

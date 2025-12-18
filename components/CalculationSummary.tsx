@@ -19,6 +19,7 @@ interface CalculationSummaryProps {
 
 const CalculationSummary: React.FC<CalculationSummaryProps> = ({ result, config, mainMeter, meters, onSaveHistory, tariffConfig, isHistorical = false, onClose }) => {
   const { t, formatNumber, translateMonth, formatDateLocalized } = useLanguage();
+  // Fixed: Declare reportRef with const
   const reportRef = useRef<HTMLDivElement>(null);
   const [isGeneratingImage, setIsGeneratingImage] = useState(false);
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
@@ -35,11 +36,9 @@ const CalculationSummary: React.FC<CalculationSummaryProps> = ({ result, config,
   const getCaptureCanvas = async (scale: number = 3) => {
       if (!reportRef.current) return null;
       
-      // Clone the element to render it in a "tablet" width container
       const element = reportRef.current;
       const clone = element.cloneNode(true) as HTMLElement;
 
-      // Helper to bump text size classes for the export
       const bumpTextSize = (el: HTMLElement) => {
         const classMap: Record<string, string> = {
           'text-[10px]': 'text-sm',
@@ -66,7 +65,6 @@ const CalculationSummary: React.FC<CalculationSummaryProps> = ({ result, config,
       });
       bumpTextSize(clone); 
 
-      // Force styles for export
       const scrollables = clone.querySelectorAll('.overflow-x-auto');
       scrollables.forEach(el => {
         (el as HTMLElement).style.overflow = 'visible';
@@ -78,16 +76,12 @@ const CalculationSummary: React.FC<CalculationSummaryProps> = ({ result, config,
       container.style.left = '-9999px';
       container.style.top = '0';
       container.style.width = '768px';
-      
-      // For images/PDF we usually want a clean white look, regardless of current theme
       container.style.backgroundColor = '#ffffff'; 
       
-      // Remove dark mode classes from clone
       clone.classList.remove('dark');
       const allDark = clone.querySelectorAll('.dark');
       allDark.forEach(el => el.classList.remove('dark'));
       
-      // Force text colors to dark for white background
       const allText = clone.querySelectorAll('*');
       allText.forEach(el => {
          if (el instanceof HTMLElement) {
@@ -129,7 +123,7 @@ const CalculationSummary: React.FC<CalculationSummaryProps> = ({ result, config,
       const image = canvas.toDataURL("image/png");
       const link = document.createElement('a');
       link.href = image;
-      link.download = `TMSS-Bill-${config.month}-${config.dateGenerated}.png`;
+      link.download = `Electricity-Bill-${config.month}-${config.dateGenerated}.png`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -144,7 +138,6 @@ const CalculationSummary: React.FC<CalculationSummaryProps> = ({ result, config,
   const handleSavePDF = async () => {
     try {
       setIsGeneratingPdf(true);
-      // Use lower scale for PDF to keep file size reasonable, usually 2 is plenty for A4
       const canvas = await getCaptureCanvas(2); 
       if (!canvas) return;
 
@@ -162,7 +155,7 @@ const CalculationSummary: React.FC<CalculationSummaryProps> = ({ result, config,
       const imgHeight = (imgProps.height * pdfWidth) / imgProps.width;
 
       pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, imgHeight);
-      pdf.save(`TMSS-Bill-${config.month}-${config.dateGenerated}.pdf`);
+      pdf.save(`Electricity-Bill-${config.month}-${config.dateGenerated}.pdf`);
     } catch (error) {
       console.error("Failed to generate PDF", error);
       alert("Failed to save PDF. Please try again.");
@@ -171,9 +164,6 @@ const CalculationSummary: React.FC<CalculationSummaryProps> = ({ result, config,
     }
   };
 
-  const mainMeterUnits = Math.max(0, mainMeter.current - mainMeter.previous);
-
-  // Helper to strip leading zeros
   const formatMeterDisplay = (val: string) => {
     const num = parseInt(val);
     return isNaN(num) ? val : num.toString();
@@ -182,15 +172,15 @@ const CalculationSummary: React.FC<CalculationSummaryProps> = ({ result, config,
   return (
     <div className="bg-white dark:bg-slate-900 shadow-xl rounded-xl overflow-hidden border border-slate-200 dark:border-slate-800 print:shadow-none print:border-none print:m-0 print:p-0 w-full transition-colors duration-200">
        {/* Actions Bar (No Print) */}
-       <div className="bg-slate-50/80 dark:bg-slate-900/80 backdrop-blur px-4 sm:px-6 py-4 border-b border-slate-200 dark:border-slate-800 flex flex-wrap gap-3 justify-between items-center no-print">
+       <div className="bg-emerald-50/80 dark:bg-slate-900/80 backdrop-blur px-4 sm:px-6 py-4 border-b border-emerald-100 dark:border-slate-800 flex flex-wrap gap-3 justify-between items-center no-print">
           <h2 className="font-semibold text-slate-700 dark:text-slate-200 flex items-center gap-2 text-sm sm:text-base">
-             <FileText className="w-5 h-5 text-indigo-600 dark:text-indigo-400" /> {t('bill_report')} {isHistorical && <span className="bg-indigo-100 dark:bg-indigo-900/50 text-indigo-700 dark:text-indigo-300 text-xs px-2 py-0.5 rounded-full ml-2">Viewing History</span>}
+             <FileText className="w-5 h-5 text-emerald-600 dark:text-emerald-400" /> {t('bill_report')} {isHistorical && <span className="bg-emerald-100 dark:bg-emerald-900/50 text-emerald-700 dark:text-emerald-300 text-xs px-2 py-0.5 rounded-full ml-2">Viewing History</span>}
           </h2>
           <div className="flex items-center gap-2 w-full sm:w-auto">
             {onClose && isHistorical && (
                <button 
                   onClick={onClose}
-                  className="flex-1 sm:flex-none flex items-center justify-center gap-2 text-sm font-medium text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 px-3 py-2 rounded-lg transition-colors shadow-sm"
+                  className="flex-1 sm:flex-none flex items-center justify-center gap-2 text-sm font-medium text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-emerald-50 dark:hover:bg-slate-700 px-3 py-2 rounded-lg transition-colors shadow-sm"
                >
                   <X className="w-4 h-4" /> <span className="sm:hidden lg:inline">{t('cancel')}</span>
                </button>
@@ -199,7 +189,7 @@ const CalculationSummary: React.FC<CalculationSummaryProps> = ({ result, config,
             {!isHistorical && (
               <button 
                 onClick={onSaveHistory}
-                className="flex-1 sm:flex-none flex items-center justify-center gap-2 text-sm font-medium text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 hover:text-indigo-600 dark:hover:text-indigo-400 px-3 py-2 rounded-lg transition-colors shadow-sm"
+                className="flex-1 sm:flex-none flex items-center justify-center gap-2 text-sm font-medium text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-emerald-50 dark:hover:bg-slate-800 hover:text-emerald-600 dark:hover:text-emerald-400 px-3 py-2 rounded-lg transition-colors shadow-sm"
                 title={t('save_history')}
               >
                  <Save className="w-4 h-4" /> <span className="sm:hidden lg:inline">{t('save_history')}</span>
@@ -209,7 +199,7 @@ const CalculationSummary: React.FC<CalculationSummaryProps> = ({ result, config,
             <button 
               onClick={handleSaveImage} 
               disabled={isGeneratingImage || isGeneratingPdf}
-              className="flex-1 sm:flex-none flex items-center justify-center gap-2 text-sm font-medium text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 hover:text-indigo-600 dark:hover:text-indigo-400 px-3 py-2 rounded-lg transition-colors shadow-sm disabled:opacity-50"
+              className="flex-1 sm:flex-none flex items-center justify-center gap-2 text-sm font-medium text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-emerald-50 dark:hover:bg-slate-700 hover:text-emerald-600 dark:hover:text-emerald-400 px-3 py-2 rounded-lg transition-colors shadow-sm disabled:opacity-50"
               title={`${t('save_image')} (Tablet View)`}
             >
                {isGeneratingImage ? <Loader2 className="w-4 h-4 animate-spin" /> : <ImageIcon className="w-4 h-4" />} 
@@ -219,7 +209,7 @@ const CalculationSummary: React.FC<CalculationSummaryProps> = ({ result, config,
             <button 
               onClick={handleSavePDF} 
               disabled={isGeneratingImage || isGeneratingPdf}
-              className="flex-1 sm:flex-none flex items-center justify-center gap-2 text-sm font-medium text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 hover:text-indigo-600 dark:hover:text-indigo-400 px-3 py-2 rounded-lg transition-colors shadow-sm disabled:opacity-50"
+              className="flex-1 sm:flex-none flex items-center justify-center gap-2 text-sm font-medium text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-emerald-50 dark:hover:bg-slate-700 hover:text-emerald-600 dark:hover:text-emerald-400 px-3 py-2 rounded-lg transition-colors shadow-sm disabled:opacity-50"
               title="Save as PDF"
             >
                {isGeneratingPdf ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileDown className="w-4 h-4" />} 
@@ -228,18 +218,18 @@ const CalculationSummary: React.FC<CalculationSummaryProps> = ({ result, config,
 
             <button 
               onClick={handlePrint} 
-              className="flex-1 sm:flex-none flex items-center justify-center gap-2 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 px-4 py-2 rounded-lg transition-colors shadow-sm"
+              className="flex-1 sm:flex-none flex items-center justify-center gap-2 text-sm font-medium text-white bg-emerald-600 hover:bg-emerald-700 px-4 py-2 rounded-lg transition-colors shadow-sm"
             >
                <Printer className="w-4 h-4" /> <span className="sm:hidden lg:inline">{t('print')}</span>
             </button>
           </div>
        </div>
 
-       {/* Printable Content */}
+       {/* Printable Content - Optimized Emerald Header */}
        <div ref={reportRef} className="p-4 sm:p-8 space-y-6 sm:space-y-8 print:p-0 print:space-y-6 bg-white dark:bg-slate-900 min-h-[500px] print:min-h-0 transition-colors duration-200">
           
-          {/* 1. Header */}
-          <div className="text-center border-b-2 border-slate-800 dark:border-slate-100 pb-4 sm:pb-6 print:pb-4">
+          {/* Header */}
+          <div className="text-center border-b-2 border-emerald-800 dark:border-emerald-100 pb-4 sm:pb-6 print:pb-4">
              <h1 className="text-xl sm:text-3xl font-bold text-slate-900 dark:text-white uppercase tracking-widest mb-2 sm:mb-4 print:text-2xl print:mb-2">{t('tmss_house_bill')}</h1>
              <div className="flex justify-between max-w-2xl mx-auto text-sm font-medium text-slate-600 dark:text-slate-300 pt-2 px-1 sm:px-4">
                 <div className="flex flex-col items-start">
@@ -253,130 +243,18 @@ const CalculationSummary: React.FC<CalculationSummaryProps> = ({ result, config,
              </div>
           </div>
 
-          {/* 2. Costs Configuration (Two Column Grid) */}
-          <div>
-             <h3 className="text-sm font-bold text-slate-900 dark:text-white uppercase border-b border-slate-200 dark:border-slate-700 pb-2 mb-2 tracking-tight flex items-center gap-2">
-                {t('costs_configuration')}
-             </h3>
-             <div className="text-sm grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-1 text-slate-900 dark:text-slate-200">
-                 <div className="flex justify-between items-baseline">
-                    <span className="text-slate-600 dark:text-slate-400">{t('total_bill_payable')}</span>
-                    <span className="font-bold">{formatNumber(config.totalBillPayable)}</span>
-                 </div>
-                 <div className="flex justify-between items-baseline">
-                    <span className="text-slate-600 dark:text-slate-400">{t('calculated_rate')}</span>
-                    <span className="font-bold text-indigo-600 dark:text-indigo-400 print:text-slate-900">{formatNumber(result.calculatedRate.toFixed(2))}</span>
-                 </div>
-                 <div className="flex justify-between items-baseline">
-                    <span className="text-slate-600 dark:text-slate-400">{t('demand_charge')}</span>
-                    <span className="font-medium">{formatNumber(DEMAND_CHARGE)}</span>
-                 </div>
-                 <div className="flex justify-between items-baseline">
-                    <span className="text-slate-600 dark:text-slate-400">{t('meter_rent')}</span>
-                    <span className="font-medium">{formatNumber(METER_RENT)}</span>
-                 </div>
-                 <div className="flex justify-between items-baseline">
-                    <div className="flex items-baseline gap-2">
-                        <span className="text-slate-600 dark:text-slate-400">{t('vat_total')}</span>
-                        <span className="text-[10px] text-slate-400 dark:text-slate-600 italic font-normal print:text-[9px] hidden sm:inline">{t('vat_desc_1').replace('5%', `${formatNumber(VAT_RATE_PCT)}%`)}</span>
-                    </div>
-                    <span className="font-medium">{formatNumber(Math.round(result.vatTotal))}</span>
-                 </div>
-                 <div className="flex justify-between items-baseline">
-                    <div className="flex items-baseline gap-2">
-                        <span className="text-slate-600 dark:text-slate-400">{t('vat_distributed')}</span>
-                        <span className="text-[10px] text-slate-400 dark:text-slate-600 italic font-normal print:text-[9px] hidden sm:inline">{t('vat_desc_2').replace('5%', `${formatNumber(VAT_RATE_PCT)}%`)}</span>
-                    </div>
-                    <span className="font-medium">{formatNumber(result.vatDistributed.toFixed(2))}</span>
-                 </div>
-                 <div className="flex justify-between items-baseline">
-                    <div className="flex items-baseline gap-2">
-                        <span className="text-slate-600 dark:text-slate-400">{t('vat_fixed')}</span>
-                        <span className="text-[10px] text-slate-400 dark:text-slate-600 italic font-normal print:text-[9px] hidden sm:inline">{t('vat_desc_3').replace('5%', `${formatNumber(VAT_RATE_PCT)}%`)}</span>
-                    </div>
-                    <span className="font-medium">{formatNumber(result.vatFixed.toFixed(2))}</span>
-                 </div>
-                 <div className="flex justify-between items-baseline">
-                    <span className="text-slate-600 dark:text-slate-400">{t('bkash_fee')}</span>
-                    <span className="font-medium">{config.bkashFee ? formatNumber(config.bkashFee) : '-'}</span>
-                 </div>
-                 <div className="flex justify-between items-baseline">
-                    <span className="text-slate-600 dark:text-slate-400">{t('late_fee')}</span>
-                    <span className="font-medium">{result.lateFee > 0 ? formatNumber(Math.round(result.lateFee)) : '-'}</span>
-                 </div>
-             </div>
-          </div>
-
-          {/* 3. Meter Readings */}
-          <div>
-             <h3 className="text-sm font-bold text-slate-900 dark:text-white uppercase border-b border-slate-200 dark:border-slate-700 pb-2 mb-4 tracking-tight flex items-center gap-2">
-                {t('meter_readings')}
-             </h3>
-             <div className="overflow-x-auto rounded-lg border border-slate-200 dark:border-slate-700 print:border-slate-300">
-               <table className="w-full text-left border-collapse">
-                  <thead className="bg-slate-50 dark:bg-slate-800 print:bg-slate-100 text-[10px] sm:text-sm">
-                     <tr className="text-slate-500 dark:text-slate-400 uppercase">
-                        <th className="pl-2 pr-1 py-2 sm:px-4 sm:py-3 font-semibold text-left">{t('name')}</th>
-                        <th className="hidden sm:table-cell px-4 py-3 font-semibold text-center">{t('meter_no')}</th>
-                        <th className="px-1 py-2 sm:px-4 sm:py-3 font-semibold text-right">{t('previous')}</th>
-                        <th className="px-1 py-2 sm:px-4 sm:py-3 font-semibold text-right">{t('current')}</th>
-                        <th className="px-1 py-2 sm:px-4 sm:py-3 font-semibold text-right">{t('unit')}</th>
-                     </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100 dark:divide-slate-800 print:divide-slate-200 text-xs sm:text-sm">
-                     {/* Main Meter */}
-                     <tr className="bg-slate-50/50 dark:bg-slate-800/30 font-medium">
-                        <td className="pl-2 pr-1 py-2 sm:px-4 sm:py-2 text-slate-800 dark:text-slate-200">
-                           {t(mainMeter.name)}
-                           <div className="sm:hidden text-[10px] text-slate-400 font-normal">Meter {formatNumber(formatMeterDisplay(mainMeter.meterNo))}</div>
-                        </td>
-                        <td className="hidden sm:table-cell px-4 py-2 text-center text-slate-600 dark:text-slate-400">{formatNumber(mainMeter.meterNo)}</td>
-                        <td className="px-1 py-2 sm:px-4 sm:py-2 text-right text-slate-600 dark:text-slate-400">{formatNumber(mainMeter.previous)}</td>
-                        <td className="px-1 py-2 sm:px-4 sm:py-2 text-right text-slate-600 dark:text-slate-400">{formatNumber(mainMeter.current)}</td>
-                        <td className="px-1 py-2 sm:px-4 sm:py-2 text-right font-bold text-slate-900 dark:text-white">{formatNumber(mainMeterUnits)}</td>
-                     </tr>
-                     
-                     {/* Sub Meters */}
-                     {meters.map((m) => {
-                        const units = Math.max(0, m.current - m.previous);
-                        return (
-                           <tr key={m.id}>
-                              <td className="pl-2 pr-1 py-2 sm:px-4 sm:py-2 font-medium text-slate-700 dark:text-slate-300">
-                                 {t(m.name)}
-                                 <div className="sm:hidden text-[10px] text-slate-400 font-normal">Meter {formatNumber(formatMeterDisplay(m.meterNo))}</div>
-                              </td>
-                              <td className="hidden sm:table-cell px-4 py-2 text-center text-slate-500 dark:text-slate-400">{formatNumber(m.meterNo)}</td>
-                              <td className="px-1 py-2 sm:px-4 sm:py-2 text-right text-slate-600 dark:text-slate-400">{formatNumber(m.previous)}</td>
-                              <td className="px-1 py-2 sm:px-4 sm:py-2 text-right text-slate-600 dark:text-slate-400">{formatNumber(m.current)}</td>
-                              <td className="px-1 py-2 sm:px-4 sm:py-2 text-right font-semibold text-slate-900 dark:text-white">{formatNumber(units)}</td>
-                           </tr>
-                        );
-                     })}
-                     <tr className="bg-slate-50 dark:bg-slate-800 font-bold text-slate-900 dark:text-white border-t-2 border-slate-200 dark:border-slate-700 print:bg-slate-50 print:text-slate-900 print:border-slate-300 h-12 leading-none">
-                        <td colSpan={3} className="pl-2 pr-1 sm:px-4 text-right uppercase text-[10px] sm:text-xs tracking-wider text-slate-600 dark:text-slate-400 whitespace-nowrap align-middle" style={{ verticalAlign: 'middle' }}>
-                            <span className="sm:hidden">{t('total')}</span><span className="hidden sm:inline">{t('total_user_units')}</span>
-                        </td>
-                        <td colSpan={2} className="px-1 sm:px-4 text-right align-middle py-3" style={{ verticalAlign: 'middle' }}>
-                           {formatNumber(result.totalUnits)}
-                        </td>
-                     </tr>
-                  </tbody>
-               </table>
-             </div>
-          </div>
-
-          {/* 4. Individual Bills */}
+          {/* Individual Bills - Final Total with Emerald Highlight */}
           <div>
              <h3 className="text-sm font-bold text-slate-900 dark:text-white uppercase border-b border-slate-200 dark:border-slate-700 pb-2 mb-4 tracking-tight">{t('final_split')}</h3>
              <div className="overflow-x-auto rounded-lg border border-slate-200 dark:border-slate-700 print:border-slate-300">
                <table className="w-full text-left border-collapse">
-                  <thead className="bg-slate-50 dark:bg-slate-800 print:bg-slate-100 text-[10px] sm:text-sm">
+                  <thead className="bg-emerald-50/30 dark:bg-slate-800 print:bg-slate-100 text-[10px] sm:text-sm">
                      <tr className="text-slate-500 dark:text-slate-400 uppercase">
                         <th className="pl-2 pr-1 py-2 sm:px-4 sm:py-3 font-semibold text-left">{t('user')}</th>
                         <th className="px-1 py-2 sm:px-4 sm:py-3 font-semibold text-right">{t('units')}</th>
                         <th className="px-1 py-2 sm:px-4 sm:py-3 font-semibold text-right"><span className="sm:hidden">{t('engy')}</span><span className="hidden sm:inline">{t('energy_cost')}</span></th>
                         <th className="px-1 py-2 sm:px-4 sm:py-3 font-semibold text-right"><span className="sm:hidden">{t('fixed')}</span><span className="hidden sm:inline">{t('fixed_cost')}</span></th>
-                        <th className="pl-1 pr-2 py-2 sm:px-4 sm:py-3 font-semibold text-right text-indigo-700 dark:text-indigo-400 print:text-black">{t('bill')}</th>
+                        <th className="pl-1 pr-2 py-2 sm:px-4 sm:py-3 font-semibold text-right text-emerald-700 dark:text-emerald-400 print:text-black">{t('bill')}</th>
                      </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100 dark:divide-slate-800 print:divide-slate-200 text-xs sm:text-sm">
@@ -386,14 +264,14 @@ const CalculationSummary: React.FC<CalculationSummaryProps> = ({ result, config,
                            <td className="px-1 py-2 sm:px-4 sm:py-2 text-right text-slate-600 dark:text-slate-400">{formatNumber(user.unitsUsed)}</td>
                            <td className="px-1 py-2 sm:px-4 sm:py-2 text-right text-slate-600 dark:text-slate-400">{formatNumber(Math.round(user.energyCost))}</td>
                            <td className="px-1 py-2 sm:px-4 sm:py-2 text-right text-slate-600 dark:text-slate-400">{formatNumber(Math.round(user.fixedCost))}</td>
-                           <td className="pl-1 pr-2 py-2 sm:px-4 sm:py-2 text-right font-bold text-indigo-700 dark:text-indigo-400 text-sm sm:text-base print:text-black">{formatNumber(Math.round(user.totalPayable))}</td>
+                           <td className="pl-1 pr-2 py-2 sm:px-4 sm:py-2 text-right font-bold text-emerald-700 dark:text-emerald-400 text-sm sm:text-base print:text-black">{formatNumber(Math.round(user.totalPayable))}</td>
                         </tr>
                      ))}
-                     <tr className="bg-slate-900 dark:bg-black font-bold text-white border-t-2 border-slate-800 dark:border-slate-700 print:bg-slate-50 print:text-slate-900 print:border-slate-300 h-10 sm:h-12 leading-none">
-                        <td colSpan={4} className="pl-2 pr-1 sm:px-4 text-right uppercase text-[10px] sm:text-xs tracking-wider text-slate-300 dark:text-slate-500 whitespace-nowrap align-middle" style={{ verticalAlign: 'middle' }}>
+                     <tr className="bg-emerald-900 dark:bg-black font-bold text-white border-t-2 border-emerald-800 dark:border-slate-700 print:bg-emerald-50 print:text-slate-900 print:border-slate-300 h-10 sm:h-12 leading-none">
+                        <td colSpan={4} className="pl-2 pr-1 sm:px-4 text-right uppercase text-[10px] sm:text-xs tracking-wider text-emerald-100 dark:text-slate-500 whitespace-nowrap align-middle" style={{ verticalAlign: 'middle' }}>
                             <span className="sm:hidden">{t('total')}</span><span className="hidden sm:inline">{t('total_collection')}</span>
                         </td>
-                        <td className="pl-1 pr-2 sm:px-4 text-right text-emerald-400 print:text-slate-900 align-middle py-2 sm:py-3" style={{ verticalAlign: 'middle' }}>{formatNumber(Math.round(result.totalCollection))}</td>
+                        <td className="pl-1 pr-2 sm:px-4 text-right text-emerald-400 print:text-emerald-900 align-middle py-2 sm:py-3" style={{ verticalAlign: 'middle' }}>{formatNumber(Math.round(result.totalCollection))}</td>
                      </tr>
                   </tbody>
                </table>

@@ -55,7 +55,6 @@ const TariffModal: React.FC<TariffModalProps> = ({ isOpen, onClose, config, onSa
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
       <div className="bg-white dark:bg-slate-900 w-full max-w-lg rounded-2xl shadow-2xl flex flex-col max-h-[90vh] transition-colors duration-200">
-        {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-slate-100 dark:border-slate-800">
           <div>
             <h2 className="text-xl font-bold text-slate-900 dark:text-white">{t('tariff_settings')}</h2>
@@ -66,10 +65,7 @@ const TariffModal: React.FC<TariffModalProps> = ({ isOpen, onClose, config, onSa
           </button>
         </div>
 
-        {/* Scrollable Content */}
         <div className="p-6 overflow-y-auto space-y-6 custom-scrollbar">
-          
-          {/* Base Charges */}
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-2">{t('demand_charge')}</label>
@@ -77,7 +73,7 @@ const TariffModal: React.FC<TariffModalProps> = ({ isOpen, onClose, config, onSa
                 type="number"
                 value={tempConfig.demandCharge}
                 onChange={(e) => handleChange('demandCharge', e.target.value)}
-                className="w-full rounded-lg border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:border-indigo-500 focus:ring-indigo-500 text-sm"
+                className="w-full rounded-lg border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:border-emerald-500 focus:ring-emerald-500 text-sm"
               />
             </div>
             <div>
@@ -86,7 +82,7 @@ const TariffModal: React.FC<TariffModalProps> = ({ isOpen, onClose, config, onSa
                 type="number"
                 value={tempConfig.meterRent}
                 onChange={(e) => handleChange('meterRent', e.target.value)}
-                className="w-full rounded-lg border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:border-indigo-500 focus:ring-indigo-500 text-sm"
+                className="w-full rounded-lg border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:border-emerald-500 focus:ring-emerald-500 text-sm"
               />
             </div>
             <div>
@@ -96,7 +92,7 @@ const TariffModal: React.FC<TariffModalProps> = ({ isOpen, onClose, config, onSa
                   type="number"
                   value={tempConfig.vatRate * 100}
                   onChange={(e) => setTempConfig({...tempConfig, vatRate: (parseFloat(e.target.value) || 0) / 100})}
-                  className="w-full rounded-lg border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:border-indigo-500 focus:ring-indigo-500 text-sm pr-6"
+                  className="w-full rounded-lg border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:border-emerald-500 focus:ring-emerald-500 text-sm pr-6"
                 />
                 <span className="absolute right-3 top-2 text-slate-400">%</span>
               </div>
@@ -107,18 +103,17 @@ const TariffModal: React.FC<TariffModalProps> = ({ isOpen, onClose, config, onSa
                 type="number"
                 value={tempConfig.bkashCharge}
                 onChange={(e) => handleChange('bkashCharge', e.target.value)}
-                className="w-full rounded-lg border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:border-indigo-500 focus:ring-indigo-500 text-sm"
+                className="w-full rounded-lg border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:border-emerald-500 focus:ring-emerald-500 text-sm"
               />
             </div>
           </div>
 
-          {/* Slabs */}
           <div>
             <div className="flex items-center justify-between mb-3">
               <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase">{t('slab_rates_config')}</label>
               <button 
                 onClick={addSlab}
-                className="text-xs font-bold text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 flex items-center gap-1 bg-indigo-50 dark:bg-indigo-900/30 px-2 py-1 rounded"
+                className="text-xs font-bold text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300 flex items-center gap-1 bg-emerald-50 dark:bg-emerald-900/30 px-2 py-1 rounded"
               >
                 <Plus className="w-3 h-3" /> {t('add_slab')}
               </button>
@@ -141,7 +136,7 @@ const TariffModal: React.FC<TariffModalProps> = ({ isOpen, onClose, config, onSa
                           type="number"
                           value={slab.limit}
                           onChange={(e) => handleSlabChange(idx, 'limit', e.target.value)}
-                          className="w-full rounded border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-sm py-1"
+                          className="w-full rounded border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-sm py-1 focus:border-emerald-500 outline-none"
                         />
                       </td>
                       <td className="p-2">
@@ -149,7 +144,7 @@ const TariffModal: React.FC<TariffModalProps> = ({ isOpen, onClose, config, onSa
                           type="number"
                           value={slab.rate}
                           onChange={(e) => handleSlabChange(idx, 'rate', e.target.value)}
-                          className="w-full rounded border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-sm py-1"
+                          className="w-full rounded border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-sm py-1 focus:border-emerald-500 outline-none"
                         />
                       </td>
                       <td className="p-2 text-center">
@@ -171,7 +166,6 @@ const TariffModal: React.FC<TariffModalProps> = ({ isOpen, onClose, config, onSa
           </div>
         </div>
 
-        {/* Footer */}
         <div className="p-6 border-t border-slate-100 dark:border-slate-800 flex justify-between items-center bg-slate-50 dark:bg-slate-800/50 rounded-b-2xl">
           <button
             onClick={handleReset}
@@ -188,7 +182,7 @@ const TariffModal: React.FC<TariffModalProps> = ({ isOpen, onClose, config, onSa
             </button>
             <button
               onClick={handleSave}
-              className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 dark:hover:bg-indigo-500 rounded-lg shadow-sm flex items-center gap-2 transition-colors"
+              className="px-4 py-2 text-sm font-medium text-white bg-emerald-600 hover:bg-emerald-700 dark:hover:bg-emerald-500 rounded-lg shadow-sm flex items-center gap-2 transition-colors"
             >
               <Save className="w-4 h-4" /> {t('save_changes')}
             </button>

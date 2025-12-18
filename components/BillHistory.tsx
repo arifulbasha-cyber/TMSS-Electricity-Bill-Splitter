@@ -17,7 +17,7 @@ const BillHistory: React.FC<BillHistoryProps> = ({ history, onLoad, onDelete, on
 
   const formatDate = (dateStr: string) => {
     if (!dateStr) return '';
-    const parts = dateStr.split('-'); // Expecting yyyy-mm-dd
+    const parts = dateStr.split('-'); 
     if (parts.length !== 3) return dateStr;
     const [year, month, day] = parts;
     return `${parseInt(day)}/${parseInt(month)}/${year.slice(-2)}`;
@@ -26,7 +26,7 @@ const BillHistory: React.FC<BillHistoryProps> = ({ history, onLoad, onDelete, on
   return (
     <div className="bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-slate-200 dark:border-slate-800 p-6 print-break-inside-avoid no-print transition-colors duration-200">
       <div className="flex items-center gap-2 mb-4 border-b border-slate-100 dark:border-slate-800 pb-4">
-        <History className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+        <History className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
         <h2 className="text-lg font-semibold text-slate-800 dark:text-slate-100">{t('bill_history')}</h2>
       </div>
       <div className="space-y-3">
@@ -34,7 +34,7 @@ const BillHistory: React.FC<BillHistoryProps> = ({ history, onLoad, onDelete, on
           <div 
             key={bill.id} 
             onClick={() => onViewReport(bill)}
-            className="group p-4 rounded-lg bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 hover:border-indigo-200 dark:hover:border-indigo-700 hover:bg-white dark:hover:bg-slate-800 hover:shadow-sm transition-all cursor-pointer relative"
+            className="group p-4 rounded-lg bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 hover:border-emerald-200 dark:hover:border-emerald-700 hover:bg-white dark:hover:bg-slate-800 hover:shadow-sm transition-all cursor-pointer relative"
           >
             <div className="flex justify-between items-start mb-2">
               <div>
@@ -44,13 +44,13 @@ const BillHistory: React.FC<BillHistoryProps> = ({ history, onLoad, onDelete, on
                   {formatDate(bill.config.dateGenerated)}
                 </div>
               </div>
-              <span className="text-sm font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/30 px-2 py-1 rounded-md">
+              <span className="text-sm font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/30 px-2 py-1 rounded-md">
                 ৳{bill.config.totalBillPayable}
               </span>
             </div>
             
             <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity hidden sm:block">
-               <div className="flex items-center gap-1 text-xs font-bold text-indigo-500">
+               <div className="flex items-center gap-1 text-xs font-bold text-emerald-500">
                    <FileText className="w-3 h-3" /> {t('report')}
                </div>
             </div>
@@ -58,7 +58,7 @@ const BillHistory: React.FC<BillHistoryProps> = ({ history, onLoad, onDelete, on
             <div className="flex items-center gap-2 mt-3 pt-3 border-t border-slate-100 dark:border-slate-700" onClick={(e) => e.stopPropagation()}>
               <button
                 onClick={() => onLoad(bill)}
-                className="flex-1 flex items-center justify-center gap-1.5 text-xs font-medium bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-300 py-1.5 rounded hover:bg-indigo-50 dark:hover:bg-indigo-900/30 hover:text-indigo-700 dark:hover:text-indigo-300 hover:border-indigo-200 dark:hover:border-indigo-700 transition-colors"
+                className="flex-1 flex items-center justify-center gap-1.5 text-xs font-medium bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-300 py-1.5 rounded hover:bg-emerald-50 dark:hover:bg-emerald-900/30 hover:text-emerald-700 dark:hover:text-emerald-300 hover:border-emerald-200 dark:hover:border-emerald-700 transition-colors"
               >
                 <RotateCcw className="w-3 h-3" /> {t('restore')}
               </button>

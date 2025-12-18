@@ -1,7 +1,7 @@
 
 import React, { useState, useRef } from 'react';
 import { MeterReading, Tenant, TariffConfig } from '../types';
-import { Users, Trash2, Plus, Zap, Lock, ChevronDown, ChevronUp, AlertTriangle, Settings, Activity } from 'lucide-react';
+import { Users, Trash2, Plus, Zap, Lock, ChevronDown, ChevronUp, AlertTriangle, Settings } from 'lucide-react';
 import { useLanguage } from '../i18n';
 
 interface MeterReadingsProps {
@@ -87,15 +87,11 @@ const MeterReadings: React.FC<MeterReadingsProps> = ({
     if (!tariffConfig) return 'bg-slate-300';
     const slabs = tariffConfig.slabs;
     if (units <= slabs[0].limit) return 'bg-emerald-500';
-    if (units <= slabs[1].limit) return 'bg-amber-500';
-    return 'bg-orange-500';
+    if (units <= slabs[1].limit) return 'bg-teal-500';
+    return 'bg-amber-500';
   };
 
-  const totalUnits = readings.reduce((sum, r) => sum + Math.max(0, r.current - r.previous), 0);
   const mainMeterUnits = Math.max(0, mainMeter.current - mainMeter.previous);
-  const diffUnits = mainMeterUnits - totalUnits;
-
-  const gaugeAngle = Math.min(180, (mainMeterUnits / (maxUnits * 2 || 300)) * 180);
 
   const formatMeterDisplay = (val: string) => {
       const num = parseInt(val);
@@ -112,79 +108,60 @@ const MeterReadings: React.FC<MeterReadingsProps> = ({
         </div>
         <button 
           onClick={handleAdd}
-          className="hidden sm:flex items-center gap-2 bg-indigo-600 dark:bg-indigo-500 text-white px-4 py-2 rounded-2xl font-bold text-sm shadow-lg shadow-indigo-600/20 active:scale-95 transition-all"
+          className="hidden sm:flex items-center gap-2 bg-emerald-600 dark:bg-emerald-500 text-white px-4 py-2 rounded-2xl font-bold text-sm shadow-lg shadow-emerald-600/20 active:scale-95 transition-all"
         >
           <Plus className="w-4 h-4" /> {t('add_meter')}
         </button>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {/* Main Meter MD3 Card - Compacted */}
-        <div className="bg-slate-900 dark:bg-black p-5 rounded-[2rem] border border-slate-800 shadow-2xl text-white relative overflow-hidden group transition-all">
-           <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/10 rounded-full blur-3xl -mr-16 -mt-16"></div>
-           
-           <div className="flex justify-between items-start mb-2 relative z-10">
+        {/* Simplified Main Meter Card */}
+        <div className="relative overflow-hidden rounded-[2rem] border border-slate-900 dark:border-emerald-500 bg-slate-900 dark:bg-slate-950 p-4 shadow-xl">
+           <div className="flex justify-between items-start mb-3">
               <div className="flex items-center gap-3">
-                 <div className="bg-indigo-600 p-2 rounded-xl shadow-xl shadow-indigo-600/20">
-                    <Lock className="w-4 h-4 text-white" />
+                 <div className="w-10 h-10 rounded-2xl bg-emerald-600 flex items-center justify-center text-white">
+                    <Lock className="w-5 h-5" />
                  </div>
                  <div>
-                    <div className="font-black text-[9px] uppercase tracking-[0.2em] text-indigo-300/60">{t('main_meter')}</div>
-                    <div className="text-[10px] text-slate-400 font-mono">ID: {formatNumber(mainMeter.meterNo || '0')}</div>
+                    <h3 className="font-black text-white text-base leading-tight uppercase tracking-wide">{t('main_meter')}</h3>
+                    <div className="text-[9px] text-slate-400 font-black uppercase tracking-[0.1em] mt-0.5">MTR {formatNumber(mainMeter.meterNo)}</div>
                  </div>
+              </div>
+              <div className="text-right">
+                  <div className="flex flex-col items-end gap-0.5">
+                    <span className="text-sm font-black text-white leading-none font-mono">Total Units</span>
+                    <span className="text-[9px] font-black px-2 py-0.5 rounded-full flex items-center gap-1 bg-emerald-500 text-white">
+                        <Zap className="w-3 h-3 fill-current" /> {formatNumber(mainMeterUnits)}
+                    </span>
+                  </div>
               </div>
            </div>
 
-           <div className="relative h-32 flex flex-col items-center justify-end mb-4">
-               <svg viewBox="0 0 200 110" className="w-52 h-28 overflow-visible">
-                   <path d="M 20 100 A 80 80 0 0 1 180 100" fill="none" stroke="#1e293b" strokeWidth="14" strokeLinecap="round" />
-                   <defs>
-                       <linearGradient id="gaugeGradientCompact" x1="0%" y1="0%" x2="100%" y2="0%">
-                           <stop offset="0%" stopColor="#10b981" />
-                           <stop offset="50%" stopColor="#fbbf24" />
-                           <stop offset="100%" stopColor="#f43f5e" />
-                       </linearGradient>
-                   </defs>
-                   <path 
-                      d="M 20 100 A 80 80 0 0 1 180 100" 
-                      fill="none" 
-                      stroke="url(#gaugeGradientCompact)" 
-                      strokeWidth="14" 
-                      strokeLinecap="round" 
-                      strokeDasharray="251.2" 
-                      strokeDashoffset={251.2 - (251.2 * (gaugeAngle / 180))}
-                      className="transition-all duration-1000 ease-out"
-                   />
-                   <text x="100" y="80" textAnchor="middle" fill="white" className="text-3xl font-black font-mono tracking-tighter">{formatNumber(mainMeterUnits)}</text>
-                   <text x="100" y="100" textAnchor="middle" fill="#64748b" className="text-[9px] uppercase font-black tracking-[0.3em]">{t('units')}</text>
-               </svg>
-           </div>
-           
            <div className="grid grid-cols-2 gap-3">
-              <div className="relative group">
+              <div className="relative">
                  <input
                     type="number"
                     value={mainMeter.previous}
                     onChange={(e) => handleMainMeterChange('previous', parseFloat(e.target.value) || 0)}
                     onFocus={handleFocus}
-                    className="w-full bg-slate-800/60 border-b-2 border-slate-700 rounded-t-xl px-3 pt-5 pb-1.5 text-right text-xs font-bold text-slate-300 focus:bg-slate-800 focus:border-indigo-500 outline-none transition-all"
+                    className="w-full bg-slate-800 border-b border-slate-700 rounded-t-lg px-3 pt-5 pb-1.5 text-right text-[11px] font-bold text-slate-300 outline-none focus:bg-slate-800 focus:border-emerald-500 transition-all"
                  />
-                 <span className="absolute left-3 top-1.5 text-[7px] text-slate-500 uppercase font-black tracking-widest">{t('previous')}</span>
+                 <span className="absolute left-3 top-1.5 text-[7px] font-black uppercase tracking-widest text-slate-500">{t('previous')}</span>
               </div>
-              <div className="relative group">
+              <div className="relative">
                  <input
                     type="number"
                     value={mainMeter.current}
                     onChange={(e) => handleMainMeterChange('current', parseFloat(e.target.value) || 0)}
                     onFocus={handleFocus}
-                    className="w-full bg-slate-800/60 border-b-2 border-slate-700 rounded-t-xl px-3 pt-5 pb-1.5 text-right text-xs font-black text-white focus:bg-slate-800 focus:border-indigo-500 outline-none transition-all"
+                    className="w-full bg-slate-800 border-b-2 border-emerald-500 rounded-t-lg px-3 pt-5 pb-1.5 text-right text-[11px] font-black text-white outline-none focus:bg-slate-800 focus:border-emerald-500 transition-all"
                  />
-                 <span className="absolute left-3 top-1.5 text-[7px] text-indigo-400/80 uppercase font-black tracking-widest">{t('current')}</span>
+                 <span className="absolute left-3 top-1.5 text-[7px] font-black uppercase tracking-widest text-emerald-400">{t('current')}</span>
               </div>
            </div>
         </div>
 
-        {/* Sub Meter Cards - Compact Neutral Surface Without Initial Block */}
+        {/* Sub Meter Cards */}
         {readings.map((reading) => {
              const units = Math.max(0, reading.current - reading.previous);
              const isExpanded = expandedCards.has(reading.id);
@@ -201,7 +178,7 @@ const MeterReadings: React.FC<MeterReadingsProps> = ({
                  </div>
                  
                  <div 
-                   className={`border border-slate-200/60 dark:border-slate-800/60 p-0 rounded-[2rem] transition-all duration-300 relative z-10 bg-white dark:bg-slate-900 ${isExpanded ? 'shadow-xl ring-2 ring-indigo-500/10' : 'shadow-sm'}`}
+                   className={`border border-slate-200/60 dark:border-slate-800/60 p-0 rounded-[2rem] transition-all duration-300 relative z-10 bg-white dark:bg-slate-900 ${isExpanded ? 'shadow-xl ring-2 ring-emerald-500/10' : 'shadow-sm'}`}
                    style={{ transform: isSwiped ? 'translateX(-80px)' : 'translateX(0)' }}
                    onTouchStart={(e) => onTouchStart(e, reading.id)}
                    onTouchMove={(e) => onTouchMove(e, reading.id)}
@@ -239,7 +216,7 @@ const MeterReadings: React.FC<MeterReadingsProps> = ({
                                value={reading.previous}
                                onChange={(e) => handleChange(reading.id, 'previous', parseFloat(e.target.value) || 0)}
                                onFocus={handleFocus}
-                               className="w-full bg-slate-100/50 dark:bg-slate-800/40 border-b border-slate-300 dark:border-slate-700 rounded-t-lg px-3 pt-5 pb-1.5 text-right text-[11px] font-bold text-slate-600 dark:text-slate-400 outline-none focus:bg-white dark:focus:bg-slate-800 focus:border-indigo-500 transition-all"
+                               className="w-full bg-slate-100/50 dark:bg-slate-800/40 border-b border-slate-300 dark:border-slate-700 rounded-t-lg px-3 pt-5 pb-1.5 text-right text-[11px] font-bold text-slate-600 dark:text-slate-400 outline-none focus:bg-white dark:focus:bg-slate-800 focus:border-emerald-500 transition-all"
                             />
                             <span className="absolute left-3 top-1.5 text-[7px] font-black uppercase tracking-widest text-slate-400">{t('previous')}</span>
                          </div>
@@ -249,9 +226,9 @@ const MeterReadings: React.FC<MeterReadingsProps> = ({
                                 value={reading.current}
                                 onChange={(e) => handleChange(reading.id, 'current', parseFloat(e.target.value) || 0)}
                                 onFocus={handleFocus}
-                                className="w-full bg-indigo-50/20 dark:bg-indigo-900/10 border-b-2 border-indigo-300 dark:border-indigo-800/50 rounded-t-lg px-3 pt-5 pb-1.5 text-right text-[11px] font-black text-slate-900 dark:text-white outline-none focus:bg-white dark:focus:bg-slate-800 focus:border-indigo-500 transition-all"
+                                className="w-full bg-emerald-50/20 dark:bg-emerald-900/10 border-b-2 border-emerald-300 dark:border-emerald-800/50 rounded-t-lg px-3 pt-5 pb-1.5 text-right text-[11px] font-black text-slate-900 dark:text-white outline-none focus:bg-white dark:focus:bg-slate-800 focus:border-emerald-500 transition-all"
                             />
-                            <span className="absolute left-3 top-1.5 text-[7px] font-black uppercase tracking-widest text-indigo-500">{t('current')}</span>
+                            <span className="absolute left-3 top-1.5 text-[7px] font-black uppercase tracking-widest text-emerald-500">{t('current')}</span>
                          </div>
                       </div>
                    </div>
@@ -264,7 +241,7 @@ const MeterReadings: React.FC<MeterReadingsProps> = ({
                                  <select
                                     value={tenants.some(t => t.name === reading.name) ? reading.name : ''}
                                     onChange={(e) => handleChange(reading.id, 'name', e.target.value)}
-                                    className="w-full h-12 rounded-xl border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white text-sm font-bold pl-4 pr-10 appearance-none focus:ring-2 focus:ring-indigo-500 transition-all outline-none"
+                                    className="w-full h-12 rounded-xl border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white text-sm font-bold pl-4 pr-10 appearance-none focus:ring-2 focus:ring-emerald-500 transition-all outline-none"
                                  >
                                     <option value="" disabled>{t('select_tenant')}</option>
                                     {tenants.map(t => (
@@ -273,7 +250,7 @@ const MeterReadings: React.FC<MeterReadingsProps> = ({
                                  </select>
                                  <ChevronDown className="absolute right-4 top-4 w-4 h-4 text-slate-500 pointer-events-none" />
                               </div>
-                              <button onClick={onManageTenants} className="w-12 h-12 flex items-center justify-center bg-slate-100 dark:bg-slate-800 rounded-xl text-slate-500 hover:text-indigo-600 transition-all active:scale-90">
+                              <button onClick={onManageTenants} className="w-12 h-12 flex items-center justify-center bg-slate-100 dark:bg-slate-800 rounded-xl text-slate-500 hover:text-emerald-600 transition-all active:scale-90">
                                  <Settings className="w-5 h-5" />
                               </button>
                            </div>
@@ -304,32 +281,10 @@ const MeterReadings: React.FC<MeterReadingsProps> = ({
         })}
       </div>
 
-      {/* Summary Section - Surface Tonal Elevation */}
-      <div className="bg-slate-100/80 dark:bg-slate-900/60 p-5 rounded-[2rem] space-y-4 border border-slate-200/50 dark:border-slate-800/50 backdrop-blur-sm">
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-              <div className="p-4 bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700/50 flex flex-col justify-center">
-                  <div className="text-[8px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-[0.15em] mb-1 flex items-center gap-1.5">
-                    <Activity className="w-3 h-3" /> {t('total_user_units')}
-                  </div>
-                  <div className="text-xl font-black text-indigo-600 dark:text-indigo-400 font-mono tracking-tighter">{formatNumber(totalUnits)} <span className="text-[10px] font-bold text-slate-400">kWh</span></div>
-              </div>
-              <div className="p-4 bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700/50 flex flex-col justify-center">
-                  <div className="text-[8px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-[0.15em] mb-1">{t('system_loss')}</div>
-                  <div className={`text-xl font-black font-mono tracking-tighter ${diffUnits < 0 ? 'text-rose-500' : 'text-amber-600'}`}>
-                    {formatNumber(diffUnits)} <span className="text-[10px] font-bold text-slate-400">kWh</span>
-                  </div>
-              </div>
-              <div className="col-span-2 sm:col-span-1 p-4 bg-indigo-600 dark:bg-indigo-500 rounded-2xl shadow-xl shadow-indigo-600/20 text-white flex flex-col justify-center">
-                  <div className="text-[8px] font-black uppercase tracking-[0.15em] mb-1 opacity-70">Rate per Unit</div>
-                  <div className="text-xl font-black font-mono tracking-tighter">৳{formatNumber(calculatedRate.toFixed(2))}</div>
-              </div>
-          </div>
-      </div>
-
-      {/* MD3 Floating Action Button (FAB) */}
+      {/* MD3 Floating Action Button (FAB) - Emerald */}
       <button 
         onClick={handleAdd}
-        className="fixed bottom-24 right-6 w-16 h-16 bg-indigo-600 dark:bg-indigo-500 text-white rounded-[1.5rem] shadow-2xl flex items-center justify-center z-40 transition-all hover:scale-105 active:scale-90 sm:hidden"
+        className="fixed bottom-24 right-6 w-16 h-16 bg-emerald-600 dark:bg-emerald-500 text-white rounded-[1.5rem] shadow-2xl flex items-center justify-center z-40 transition-all hover:scale-105 active:scale-90 sm:hidden"
       >
         <Plus className="w-8 h-8" />
       </button>
