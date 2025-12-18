@@ -16,7 +16,7 @@ import CloudSetupModal from './components/CloudSetupModal';
 import MobileNav from './components/MobileNav';
 import SkeletonLoader from './components/SkeletonLoader';
 import ModalWrapper from './components/ModalWrapper';
-import { Lightbulb, Database, Download, Settings, Users, Cloud, LogIn, LogOut, Moon, Sun, Menu, ArrowRight, PieChart, BarChart3, RefreshCw, Plus, ArrowLeft } from 'lucide-react';
+import { Lightbulb, Database, Download, Settings, Users, Cloud, LogIn, LogOut, Moon, Sun, Menu, ArrowRight, PieChart, BarChart3, RefreshCw, Plus, ArrowLeft, X, History } from 'lucide-react';
 import { LanguageProvider, useLanguage } from './i18n';
 import { ThemeProvider, useTheme } from './components/ThemeContext';
 import { firebaseService } from './services/firebase';
@@ -40,15 +40,9 @@ const calculateBillBreakdown = (
     const DEMAND_CHARGE = tariffConfig.demandCharge;
     const METER_RENT = tariffConfig.meterRent;
 
-    // Total VAT extracted from the total payable amount
     const vatTotal = (config.totalBillPayable * VAT_RATE) / (1 + VAT_RATE);
-    
-    // VAT Fixed = (Demand Charge + Meter Rent) * 5%
     const vatFixed = (DEMAND_CHARGE + METER_RENT) * VAT_RATE;
-    
-    // VAT Distributed = VAT - VAT Fixed
     const vatDistributed = Math.max(0, vatTotal - vatFixed);
-
     const lateFee = config.includeLateFee ? vatTotal : 0;
 
     let totalUnits = 0;
@@ -57,13 +51,10 @@ const calculateBillBreakdown = (
       totalUnits += units > 0 ? units : 0;
     });
 
-    // Rate Calculation: (Total Bill - Demand Charge - Meter Rent - VAT Fixed) / Total Units
-    // This pool includes Energy Cost + VAT Distributed
     const variableCostPool = config.totalBillPayable - DEMAND_CHARGE - METER_RENT - vatFixed;
     const calculatedRate = totalUnits > 0 ? variableCostPool / totalUnits : 0;
 
     const numUsers = meters.length;
-    // Fixed costs pool to be shared: Demand + Rent + VAT Fixed + optional Fees
     const totalFixedPool = DEMAND_CHARGE + METER_RENT + vatFixed + config.bkashFee + lateFee;
     const fixedCostPerUser = numUsers > 0 ? totalFixedPool / numUsers : 0;
 
@@ -96,7 +87,7 @@ const calculateBillBreakdown = (
 };
 
 const AppContent: React.FC = () => {
-  const { t, language, setLanguage } = useLanguage();
+  const { t, language, setLanguage, translateMonth } = useLanguage();
   const { theme, toggleTheme } = useTheme();
   type AppView = 'home' | 'input' | 'estimator' | 'report' | 'history' | 'stats' | 'trends' | 'tenants' | 'tariff';
   const [currentView, setCurrentView] = useState<AppView>('home');
@@ -128,7 +119,7 @@ const AppContent: React.FC = () => {
 
   const handleViewChange = (view: AppView) => {
       setCurrentView(view);
-      if (view !== 'report') {
+      if (view !== 'report' && view !== 'input') {
         setViewedBill(null);
       }
       window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -300,7 +291,7 @@ const AppContent: React.FC = () => {
 
   const handleViewHistory = (record: SavedBill) => {
     setViewedBill(record);
-    setCurrentView('report');
+    setCurrentView('input');
   };
 
   const applyBillRecord = (record: SavedBill) => {
@@ -389,17 +380,42 @@ const AppContent: React.FC = () => {
       case 'input':
         return (
           <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <BillConfiguration config={config} onChange={handleConfigChange} tariffConfig={tariffConfig} />
+            {viewedBill && (
+                <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800/50 p-4 rounded-2xl flex items-center justify-between shadow-sm">
+                   <div className="flex items-center gap-3">
+                      <div className="bg-amber-100 dark:bg-amber-900/50 p-2 rounded-xl text-amber-600 dark:text-amber-400">
+                         <History className="w-5 h-5" />
+                      </div>
+                      <div>
+                         <h4 className="font-black text-amber-900 dark:text-amber-200 text-sm uppercase tracking-tight">{t('bill_report')} - {translateMonth(viewedBill.config.month)}</h4>
+                         <p className="text-[10px] font-bold text-amber-700 dark:text-amber-400 uppercase tracking-widest">{t('saved_at')} {new Date(viewedBill.savedAt).toLocaleDateString()}</p>
+                      </div>
+                   </div>
+                   <button 
+                      onClick={() => handleViewChange('history')}
+                      className="p-2 bg-white dark:bg-slate-800 text-slate-500 hover:text-amber-600 rounded-xl transition-all shadow-sm"
+                   >
+                      <X className="w-5 h-5" />
+                   </button>
+                </div>
+            )}
+            <BillConfiguration 
+                config={activeConfig} 
+                onChange={handleConfigChange} 
+                tariffConfig={tariffConfig} 
+                readOnly={!!viewedBill}
+            />
             <MeterReadings 
-                mainMeter={mainMeter} 
+                mainMeter={activeMainMeter} 
                 onMainMeterUpdate={setMainMeter} 
-                readings={meters} 
+                readings={activeMeters} 
                 onUpdate={setMeters} 
                 tenants={tenants} 
                 onManageTenants={() => handleViewChange('tenants')}
                 maxUnits={maxUserUnits}
                 calculatedRate={calculationResult.calculatedRate}
                 tariffConfig={tariffConfig}
+                readOnly={!!viewedBill}
             />
           </div>
         );
