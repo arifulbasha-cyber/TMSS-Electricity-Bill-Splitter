@@ -59,15 +59,15 @@ const TenantManager: React.FC<TenantManagerProps> = ({ tenants, onUpdateTenants 
 
   return (
     <div className="bg-white dark:bg-slate-900 w-full rounded-[2.5rem] shadow-sm border border-slate-200 dark:border-slate-800 flex flex-col transition-colors duration-200 overflow-hidden">
-      {/* Page Header */}
-      <div className="p-8 border-b border-slate-100 dark:border-slate-800 bg-emerald-50/30 dark:bg-slate-800/20">
+      {/* Page Header - Deepened */}
+      <div className="p-8 border-b border-emerald-700/10 dark:border-emerald-500/10 bg-emerald-600 dark:bg-emerald-900/40">
         <div className="flex items-center gap-4">
-          <div className="bg-emerald-600 p-3 rounded-2xl shadow-lg shadow-emerald-500/20">
+          <div className="bg-white/20 p-3 rounded-2xl shadow-lg">
             <Users className="w-6 h-6 text-white" />
           </div>
           <div>
-            <h2 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">{t('tenant_manager')}</h2>
-            <p className="text-sm font-bold text-slate-500 dark:text-slate-400 mt-1 uppercase tracking-widest">{t('tenant_desc')}</p>
+            <h2 className="text-2xl font-black text-white tracking-tight">{t('tenant_manager')}</h2>
+            <p className="text-sm font-bold text-emerald-100 mt-1 uppercase tracking-widest">{t('tenant_desc')}</p>
           </div>
         </div>
       </div>

@@ -457,100 +457,102 @@ const AppContent: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 pb-28 transition-colors duration-200">
-      <header className="bg-emerald-50/70 dark:bg-slate-900/80 backdrop-blur-2xl sticky top-0 z-30 no-print px-4 h-16 flex items-center justify-between border-b border-emerald-100 dark:border-slate-800 transition-colors duration-200">
-        <div className="flex items-center gap-3">
-            <div className="bg-emerald-600 dark:bg-emerald-500 p-2.5 rounded-2xl shadow-lg shadow-emerald-500/20">
-              <Lightbulb className="w-5 h-5 text-white" />
-            </div>
-            <div className="overflow-hidden">
-               <h1 className="text-base sm:text-lg font-black text-slate-900 dark:text-white leading-none truncate pr-2">{t('app_title')}</h1>
-               <div className="flex items-center gap-1.5 mt-1">
-                 {user ? (
-                    <div className="flex items-center gap-1 text-[9px] font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-widest">
-                        <Cloud className="w-2.5 h-2.5" />
-                        {t('cloud')}
-                    </div>
-                 ) : (
-                    <div className="flex items-center gap-1 text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">
-                        <Database className="w-2.5 h-2.5" />
-                        {t('local')}
-                    </div>
-                 )}
-                 {isSyncing && <RefreshCw className="w-2.5 h-2.5 text-emerald-400 animate-spin" />}
-               </div>
-            </div>
-        </div>
-          
-        <div className="flex items-center gap-1">
-          {installPrompt && (
-            <button onClick={handleInstallClick} className="p-3 text-slate-600 dark:text-slate-400 hover:bg-emerald-100/50 dark:hover:bg-slate-800 rounded-2xl transition-colors">
-              <Download className="w-5 h-5" />
-            </button>
-          )}
-
-          <div className="relative">
-            <button 
-              onClick={() => setIsMenuOpen(!isMenuOpen)}
-              className="p-3 text-slate-600 dark:text-slate-400 hover:bg-emerald-100/50 dark:hover:bg-slate-800 rounded-2xl transition-all active:scale-90"
-            >
-              <Menu className="w-6 h-6" />
-            </button>
-
-            {isMenuOpen && (
-              <>
-                <div className="fixed inset-0 z-40 bg-transparent" onClick={() => setIsMenuOpen(false)}></div>
-                <div className="absolute right-0 top-full mt-3 w-64 bg-white dark:bg-slate-900 rounded-[2rem] shadow-2xl border border-slate-200 dark:border-slate-800 py-3 z-50 animate-in fade-in slide-in-from-top-2">
-                  <div className="px-5 py-2 mb-2">
-                    <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{t('actions')}</div>
-                  </div>
-                  
-                  <button onClick={() => { handleViewChange('stats'); setIsMenuOpen(false); }} className="w-full text-left px-5 py-3 text-sm font-bold text-slate-700 dark:text-slate-200 hover:bg-emerald-50 dark:hover:bg-slate-800 flex items-center gap-3 transition-colors">
-                    <PieChart className="w-5 h-5 text-emerald-500" /> {t('consumption_share')}
-                  </button>
-                  <button onClick={() => { handleViewChange('trends'); setIsMenuOpen(false); }} className="w-full text-left px-5 py-3 text-sm font-bold text-slate-700 dark:text-slate-200 hover:bg-emerald-50 dark:hover:bg-slate-800 flex items-center gap-3 transition-colors">
-                    <BarChart3 className="w-5 h-5 text-teal-500" /> {t('trends')}
-                  </button>
-                  <button onClick={handleNextMonth} className="w-full text-left px-5 py-3 text-sm font-bold text-slate-700 dark:text-slate-200 hover:bg-emerald-50 dark:hover:bg-slate-800 flex items-center gap-3 transition-colors">
-                    <ArrowRight className="w-5 h-5 text-emerald-600" /> {t('next_month')}
-                  </button>
-                  
-                  <div className="mx-4 my-2 border-t border-slate-100 dark:border-slate-800"></div>
-                  
-                  <button onClick={() => { handleViewChange('tenants'); setIsMenuOpen(false); }} className="w-full text-left px-5 py-3 text-sm font-bold text-slate-700 dark:text-slate-200 hover:bg-emerald-50 dark:hover:bg-slate-800 flex items-center gap-3 transition-colors">
-                    <Users className="w-5 h-5 text-sage-500" /> {t('tenants')}
-                  </button>
-                  <button onClick={() => { handleViewChange('tariff'); setIsMenuOpen(false); }} className="w-full text-left px-5 py-3 text-sm font-bold text-slate-700 dark:text-slate-200 hover:bg-emerald-50 dark:hover:bg-slate-800 flex items-center gap-3 transition-colors">
-                    <Settings className="w-5 h-5 text-slate-500" /> {t('settings')}
-                  </button>
-                  
-                  <div className="mx-4 my-2 border-t border-slate-100 dark:border-slate-800"></div>
-
-                  <div className="flex items-center justify-between px-5 py-2">
-                    <span className="text-sm font-bold text-slate-700 dark:text-slate-200">{t('theme')}</span>
-                    <button onClick={toggleTheme} className="p-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
-                      {theme === 'dark' ? <Moon className="w-5 h-5" /> : <Sun className="w-5 h-5" />}
-                    </button>
-                  </div>
-
-                  <div className="flex items-center justify-between px-5 py-2">
-                     <div className="flex rounded-xl bg-slate-100 dark:bg-slate-800 p-1 w-full">
-                       <button onClick={() => setLanguage('en')} className={`flex-1 py-1 text-[10px] font-black rounded-lg transition-all ${language === 'en' ? 'bg-white dark:bg-slate-700 text-emerald-600 shadow-sm' : 'text-slate-50'}`}>ENGLISH</button>
-                       <button onClick={() => setLanguage('bn')} className={`flex-1 py-1 text-[10px] font-black rounded-lg transition-all ${language === 'bn' ? 'bg-white dark:bg-slate-700 text-emerald-600 shadow-sm' : 'text-slate-50'}`}>বাংলা</button>
-                     </div>
-                  </div>
-
+      <header className="bg-emerald-700 dark:bg-slate-950 sticky top-0 z-30 no-print px-4 pt-safe flex items-end justify-between border-b border-emerald-800 dark:border-slate-800 transition-colors duration-200 shadow-md shadow-emerald-900/10 min-h-[4rem]">
+        <div className="flex items-center gap-3 w-full justify-between pb-3">
+          <div className="flex items-center gap-3">
+              <div className="bg-white/20 p-2.5 rounded-2xl">
+                <Lightbulb className="w-5 h-5 text-white" />
+              </div>
+              <div className="overflow-hidden">
+                <h1 className="text-base sm:text-lg font-black text-white leading-none truncate pr-2">{t('app_title')}</h1>
+                <div className="flex items-center gap-1.5 mt-1">
                   {user ? (
-                     <button onClick={handleLogout} className="w-full text-left px-5 py-4 text-sm font-bold text-red-500 hover:bg-red-50 dark:hover:bg-red-900/10 flex items-center gap-3 mt-1">
-                        <LogOut className="w-5 h-5" /> {t('logout')}
-                     </button>
+                      <div className="flex items-center gap-1 text-[9px] font-black text-emerald-100 uppercase tracking-widest">
+                          <Cloud className="w-2.5 h-2.5" />
+                          {t('cloud')}
+                      </div>
                   ) : (
-                     <button onClick={handleLogin} className="w-full text-left px-5 py-4 text-sm font-bold text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-900/10 flex items-center gap-3 mt-1">
-                        <LogIn className="w-5 h-5" /> {t('login')}
-                     </button>
+                      <div className="flex items-center gap-1 text-[9px] font-black text-white/50 uppercase tracking-widest">
+                          <Database className="w-2.5 h-2.5" />
+                          {t('local')}
+                      </div>
                   )}
+                  {isSyncing && <RefreshCw className="w-2.5 h-2.5 text-white/70 animate-spin" />}
                 </div>
-              </>
+              </div>
+          </div>
+            
+          <div className="flex items-center gap-1">
+            {installPrompt && (
+              <button onClick={handleInstallClick} className="p-3 text-white/70 hover:bg-white/10 rounded-2xl transition-colors">
+                <Download className="w-5 h-5" />
+              </button>
             )}
+
+            <div className="relative">
+              <button 
+                onClick={() => setIsMenuOpen(!isMenuOpen)}
+                className="p-3 text-white hover:bg-white/10 rounded-2xl transition-all active:scale-90"
+              >
+                <Menu className="w-6 h-6" />
+              </button>
+
+              {isMenuOpen && (
+                <>
+                  <div className="fixed inset-0 z-40 bg-transparent" onClick={() => setIsMenuOpen(false)}></div>
+                  <div className="absolute right-0 top-full mt-3 w-64 bg-white dark:bg-slate-900 rounded-[2rem] shadow-2xl border border-slate-200 dark:border-slate-800 py-3 z-50 animate-in fade-in slide-in-from-top-2">
+                    <div className="px-5 py-2 mb-2">
+                      <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{t('actions')}</div>
+                    </div>
+                    
+                    <button onClick={() => { handleViewChange('stats'); setIsMenuOpen(false); }} className="w-full text-left px-5 py-3 text-sm font-bold text-slate-700 dark:text-slate-200 hover:bg-emerald-50 dark:hover:bg-slate-800 flex items-center gap-3 transition-colors">
+                      <PieChart className="w-5 h-5 text-emerald-500" /> {t('consumption_share')}
+                    </button>
+                    <button onClick={() => { handleViewChange('trends'); setIsMenuOpen(false); }} className="w-full text-left px-5 py-3 text-sm font-bold text-slate-700 dark:text-slate-200 hover:bg-emerald-50 dark:hover:bg-slate-800 flex items-center gap-3 transition-colors">
+                      <BarChart3 className="w-5 h-5 text-teal-500" /> {t('trends')}
+                    </button>
+                    <button onClick={handleNextMonth} className="w-full text-left px-5 py-3 text-sm font-bold text-slate-700 dark:text-slate-200 hover:bg-emerald-50 dark:hover:bg-slate-800 flex items-center gap-3 transition-colors">
+                      <ArrowRight className="w-5 h-5 text-emerald-600" /> {t('next_month')}
+                    </button>
+                    
+                    <div className="mx-4 my-2 border-t border-slate-100 dark:border-slate-800"></div>
+                    
+                    <button onClick={() => { handleViewChange('tenants'); setIsMenuOpen(false); }} className="w-full text-left px-5 py-3 text-sm font-bold text-slate-700 dark:text-slate-200 hover:bg-emerald-50 dark:hover:bg-slate-800 flex items-center gap-3 transition-colors">
+                      <Users className="w-5 h-5 text-sage-500" /> {t('tenants')}
+                    </button>
+                    <button onClick={() => { handleViewChange('tariff'); setIsMenuOpen(false); }} className="w-full text-left px-5 py-3 text-sm font-bold text-slate-700 dark:text-slate-200 hover:bg-emerald-50 dark:hover:bg-slate-800 flex items-center gap-3 transition-colors">
+                      <Settings className="w-5 h-5 text-slate-500" /> {t('settings')}
+                    </button>
+                    
+                    <div className="mx-4 my-2 border-t border-slate-100 dark:border-slate-800"></div>
+
+                    <div className="flex items-center justify-between px-5 py-2">
+                      <span className="text-sm font-bold text-slate-700 dark:text-slate-200">{t('theme')}</span>
+                      <button onClick={toggleTheme} className="p-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
+                        {theme === 'dark' ? <Moon className="w-5 h-5" /> : <Sun className="w-5 h-5" />}
+                      </button>
+                    </div>
+
+                    <div className="flex items-center justify-between px-5 py-2">
+                      <div className="flex rounded-xl bg-slate-100 dark:bg-slate-800 p-1 w-full">
+                        <button onClick={() => setLanguage('en')} className={`flex-1 py-1 text-[10px] font-black rounded-lg transition-all ${language === 'en' ? 'bg-white dark:bg-slate-700 text-emerald-600 shadow-sm' : 'text-slate-400'}`}>ENGLISH</button>
+                        <button onClick={() => setLanguage('bn')} className={`flex-1 py-1 text-[10px] font-black rounded-lg transition-all ${language === 'bn' ? 'bg-white dark:bg-slate-700 text-emerald-600 shadow-sm' : 'text-slate-400'}`}>বাংলা</button>
+                      </div>
+                    </div>
+
+                    {user ? (
+                      <button onClick={handleLogout} className="w-full text-left px-5 py-4 text-sm font-bold text-red-500 hover:bg-red-50 dark:hover:bg-red-900/10 flex items-center gap-3 mt-1">
+                          <LogOut className="w-5 h-5" /> {t('logout')}
+                      </button>
+                    ) : (
+                      <button onClick={handleLogin} className="w-full text-left px-5 py-4 text-sm font-bold text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-900/10 flex items-center gap-3 mt-1">
+                          <LogIn className="w-5 h-5" /> {t('login')}
+                      </button>
+                    )}
+                  </div>
+                </>
+              )}
+            </div>
           </div>
         </div>
       </header>

@@ -12,18 +12,18 @@ interface ConsumptionStatsProps {
 const ConsumptionStats: React.FC<ConsumptionStatsProps> = ({ calculations, totalUnits }) => {
   const { t, formatNumber } = useLanguage();
   return (
-    <div className="bg-white dark:bg-slate-900 rounded-[2.5rem] shadow-sm border border-slate-200 dark:border-slate-800 p-8 print-break-inside-avoid transition-colors duration-200 overflow-hidden">
-      <div className="flex items-center gap-4 mb-8 border-b border-slate-100 dark:border-slate-800 pb-6">
-        <div className="bg-emerald-600 p-3 rounded-2xl shadow-lg shadow-emerald-500/20">
+    <div className="bg-white dark:bg-slate-900 rounded-[2.5rem] shadow-sm border border-slate-200 dark:border-slate-800 transition-colors duration-200 overflow-hidden">
+      <div className="flex items-center gap-4 p-8 border-b border-emerald-700/10 dark:border-emerald-500/10 bg-emerald-600 dark:bg-emerald-900/40">
+        <div className="bg-white/20 p-3 rounded-2xl shadow-lg">
           <PieChart className="w-6 h-6 text-white" />
         </div>
         <div>
-          <h2 className="text-2xl font-black text-slate-900 dark:text-slate-100 tracking-tight">{t('consumption_share')}</h2>
-          <p className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest">Global Resource Allocation</p>
+          <h2 className="text-2xl font-black text-white tracking-tight">{t('consumption_share')}</h2>
+          <p className="text-sm font-bold text-emerald-100 uppercase tracking-widest">Global Resource Allocation</p>
         </div>
       </div>
 
-      <div className="space-y-6">
+      <div className="p-8 space-y-6">
         {calculations.map((user, index) => {
           const percentage = totalUnits > 0 ? (user.unitsUsed / totalUnits) * 100 : 0;
           const colors = ['bg-emerald-600', 'bg-teal-600', 'bg-lime-600', 'bg-emerald-400', 'bg-teal-400', 'bg-green-600'];
@@ -60,7 +60,7 @@ const ConsumptionStats: React.FC<ConsumptionStatsProps> = ({ calculations, total
       </div>
 
       {totalUnits > 0 && (
-        <div className="mt-12 p-6 bg-slate-50 dark:bg-slate-800/30 rounded-[2rem] border border-slate-100 dark:border-slate-800 flex justify-between items-center">
+        <div className="mx-8 mb-8 p-6 bg-slate-50 dark:bg-slate-800/30 rounded-[2rem] border border-slate-100 dark:border-slate-800 flex justify-between items-center">
             <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Accumulated System Consumption</div>
             <div className="text-2xl font-black text-emerald-600 dark:text-emerald-400 font-mono">{formatNumber(totalUnits)} <span className="text-sm uppercase">kWh</span></div>
         </div>

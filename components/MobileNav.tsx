@@ -19,7 +19,7 @@ const MobileNav: React.FC<MobileNavProps> = ({ currentView, onChangeView }) => {
   ] as const;
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border-t border-slate-200 dark:border-slate-800 z-50 pb-safe px-2 py-2 shadow-lg print:hidden transition-colors duration-200">
+    <div className="fixed bottom-0 left-0 right-0 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border-t border-slate-200 dark:border-slate-800 z-50 px-2 pt-2 pb-safe shadow-lg print:hidden transition-colors duration-200">
       <div className="flex justify-around items-center max-w-lg mx-auto h-16">
         {navItems.map((item) => {
           const Icon = item.icon;
