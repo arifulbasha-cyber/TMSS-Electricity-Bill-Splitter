@@ -158,7 +158,7 @@ const CloudSetupModal: React.FC<CloudSetupModalProps> = ({ isOpen, onClose, onCo
             <h3 className="text-xs font-bold text-emerald-800 dark:text-emerald-400 uppercase mb-2">Instructions:</h3>
             <ol className="list-decimal list-inside text-xs text-slate-700 dark:text-slate-300 space-y-1 mb-4">
               <li>Create a new Google Spreadsheet.</li>
-              <li>Go to Extensions > Apps Script.</li>
+              <li>Go to Extensions &gt; Apps Script.</li>
               <li>Deploy the required service script as a Web App.</li>
               <li>Set access to "Anyone".</li>
             </ol>
