@@ -40,38 +40,59 @@ const calculateBillBreakdown = (
     const DEMAND_CHARGE = tariffConfig.demandCharge;
     const METER_RENT = tariffConfig.meterRent;
 
+    // Total VAT extracted from the total payable amount
     const vatTotal = (config.totalBillPayable * VAT_RATE) / (1 + VAT_RATE);
-    const lateFee = config.includeLateFee ? vatTotal : 0;
+    
+    // VAT Fixed = (Demand Charge + Meter Rent) * 5%
     const vatFixed = (DEMAND_CHARGE + METER_RENT) * VAT_RATE;
-    const vatDistributed = Math.max(0, ((config.totalBillPayable / (1 + VAT_RATE)) - (DEMAND_CHARGE + METER_RENT)) * VAT_RATE);
+    
+    // VAT Distributed = VAT - VAT Fixed
+    const vatDistributed = Math.max(0, vatTotal - vatFixed);
+
+    const lateFee = config.includeLateFee ? vatTotal : 0;
 
     let totalUnits = 0;
-    meters.forEach(m => totalUnits += Math.max(0, m.current - m.previous));
+    meters.forEach(m => {
+      const units = m.current - m.previous;
+      totalUnits += units > 0 ? units : 0;
+    });
 
+    // Rate Calculation: (Total Bill - Demand Charge - Meter Rent - VAT Fixed) / Total Units
+    // This pool includes Energy Cost + VAT Distributed
     const variableCostPool = config.totalBillPayable - DEMAND_CHARGE - METER_RENT - vatFixed;
     const calculatedRate = totalUnits > 0 ? variableCostPool / totalUnits : 0;
 
     const numUsers = meters.length;
+    // Fixed costs pool to be shared: Demand + Rent + VAT Fixed + optional Fees
     const totalFixedPool = DEMAND_CHARGE + METER_RENT + vatFixed + config.bkashFee + lateFee;
     const fixedCostPerUser = numUsers > 0 ? totalFixedPool / numUsers : 0;
 
     let totalCollection = 0;
     const userCalculations: UserCalculation[] = meters.map(m => {
       const units = Math.max(0, m.current - m.previous);
-      const energyCost = units * calculatedRate;
-      const totalPayable = energyCost + fixedCostPerUser;
+      const energyCostWithDistributedVat = units * calculatedRate;
+      const totalPayable = energyCostWithDistributedVat + fixedCostPerUser;
       totalCollection += totalPayable;
       return {
         id: m.id,
         name: m.name,
         unitsUsed: units,
-        energyCost: energyCost,
+        energyCost: energyCostWithDistributedVat,
         fixedCost: fixedCostPerUser,
         totalPayable: totalPayable
       };
     });
 
-    return { vatFixed, vatDistributed, vatTotal, lateFee, calculatedRate, totalUnits, userCalculations, totalCollection };
+    return { 
+      vatFixed, 
+      vatDistributed, 
+      vatTotal, 
+      lateFee, 
+      calculatedRate, 
+      totalUnits, 
+      userCalculations, 
+      totalCollection 
+    };
 };
 
 const AppContent: React.FC = () => {
