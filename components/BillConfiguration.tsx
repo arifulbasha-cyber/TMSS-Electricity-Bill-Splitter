@@ -15,7 +15,6 @@ const BillConfiguration: React.FC<BillConfigurationProps> = ({ config, onChange,
   const { t, translateMonth } = useLanguage();
 
   const handleChange = (key: keyof BillConfig) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    // Prevent NaN by defaulting to 0 if parsing fails
     const val = e.target.type === 'number' ? (parseFloat(e.target.value) || 0) : e.target.value;
     onChange(key, val);
   };
@@ -27,99 +26,86 @@ const BillConfiguration: React.FC<BillConfigurationProps> = ({ config, onChange,
   const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 
   return (
-    <div className="bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-slate-200 dark:border-slate-800 p-6 print-break-inside-avoid transition-colors duration-200">
-      <div className="flex items-center justify-between mb-6 border-b border-slate-100 dark:border-slate-800 pb-4">
-        <div className="flex items-center gap-2">
-          <Settings className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
-          <h2 className="text-lg font-semibold text-slate-800 dark:text-slate-100">{t('costs_configuration')}</h2>
+    <div className="bg-white dark:bg-slate-900 rounded-[2rem] border border-slate-200 dark:border-slate-800 p-6 transition-all">
+      <div className="flex items-center gap-3 mb-6">
+        <div className="bg-indigo-100 dark:bg-indigo-900/50 p-2.5 rounded-2xl">
+          <Settings className="w-6 h-6 text-indigo-600 dark:text-indigo-400" />
         </div>
+        <h2 className="text-xl font-black text-slate-800 dark:text-slate-100 tracking-tight">{t('costs_configuration')}</h2>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {/* Date Config */}
-        <div className="col-span-1 md:col-span-2 lg:col-span-3 grid grid-cols-2 gap-4 bg-slate-50 dark:bg-slate-800/50 p-4 rounded-xl border border-slate-200 dark:border-slate-700">
-           <div>
-            <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-2">{t('bill_month')}</label>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+        {/* Date Selection Group */}
+        <div className="col-span-1 md:col-span-2 lg:col-span-3 grid grid-cols-2 gap-4 bg-slate-50 dark:bg-slate-800/30 p-5 rounded-[1.5rem] border border-slate-100 dark:border-slate-800">
+           <div className="relative group">
+            <label className="absolute left-3 top-2 text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest transition-colors group-focus-within:text-indigo-600">{t('bill_month')}</label>
             <select
               value={config.month}
               onChange={handleChange('month')}
-              className="w-full rounded-lg border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white text-sm focus:border-indigo-500 focus:ring-indigo-500 shadow-sm"
+              className="w-full h-14 rounded-xl border-b-2 border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white text-sm font-bold pt-6 pb-2 px-3 focus:border-indigo-500 outline-none transition-all appearance-none"
             >
               {months.map(m => (
                 <option key={m} value={m}>{translateMonth(m)}</option>
               ))}
             </select>
           </div>
-          <div>
-            <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-2 flex items-center gap-1">
-              {t('date_generated')} <Calendar className="w-3 h-3" />
-            </label>
+          <div className="relative group">
+            <label className="absolute left-3 top-2 text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest transition-colors group-focus-within:text-indigo-600">{t('date_generated')}</label>
             <input
               type="date"
               value={config.dateGenerated}
               onChange={handleChange('dateGenerated')}
-              className="w-full rounded-lg border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white text-sm focus:border-indigo-500 focus:ring-indigo-500 shadow-sm color-scheme-dark"
+              className="w-full h-14 rounded-xl border-b-2 border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white text-sm font-bold pt-6 pb-2 px-3 focus:border-indigo-500 outline-none transition-all color-scheme-dark"
             />
           </div>
         </div>
 
-        {/* Total Bill */}
-        <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm">
-          <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-2 flex items-center justify-between">
-            <span className="flex items-center gap-1">{t('total_bill_payable')} <Banknote className="w-3 h-3" /></span>
-          </label>
-          <div className="relative">
+        {/* Amount Input */}
+        <div className="relative group">
+          <label className="absolute left-4 top-2 text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest group-focus-within:text-indigo-600">{t('total_bill_payable')}</label>
+          <div className="relative flex items-center">
             <input
               type="number"
               min="0"
               value={config.totalBillPayable}
               onChange={handleChange('totalBillPayable')}
               onFocus={handleFocus}
-              className="w-full rounded-lg border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 focus:border-indigo-500 focus:ring-indigo-500 text-xl font-bold text-slate-900 dark:text-white pr-8 shadow-sm"
+              className="w-full h-16 rounded-xl border-b-2 border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 text-2xl font-black text-slate-900 dark:text-white pt-7 pb-2 px-4 focus:bg-white dark:focus:bg-slate-800 focus:border-indigo-500 outline-none transition-all"
             />
-            <span className="absolute right-3 top-3.5 text-xs text-slate-400 font-bold pointer-events-none">৳</span>
+            <span className="absolute right-4 top-8 text-xl text-slate-400 font-black">৳</span>
           </div>
         </div>
 
-        {/* bKash Fee Toggle */}
-        <div 
-           className={`p-4 rounded-xl border transition-all duration-200 flex flex-col justify-center cursor-pointer shadow-sm ${config.includeBkashFee ? 'border-indigo-300 dark:border-indigo-700 bg-slate-50 dark:bg-slate-800/50' : 'bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 hover:border-indigo-200 dark:hover:border-slate-600'}`} 
+        {/* Tonal Choice Chips (Native Android Style) */}
+        <button 
            onClick={() => onChange('includeBkashFee', !config.includeBkashFee)}
+           className={`h-16 rounded-[1.25rem] px-5 flex items-center gap-3 transition-all ${
+             config.includeBkashFee 
+               ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/30' 
+               : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700'
+           }`}
         >
-          <label className={`block text-xs font-bold uppercase mb-2 flex items-center gap-1 cursor-pointer transition-colors ${config.includeBkashFee ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-500 dark:text-slate-400'}`}>
-            {t('bkash_fee')} <CreditCard className="w-3 h-3" />
-          </label>
-          <div className="flex items-center gap-2">
-             {config.includeBkashFee ? (
-               <CheckCircle2 className="w-6 h-6 text-indigo-600 dark:text-indigo-400" />
-             ) : (
-               <Circle className="w-6 h-6 text-slate-400 dark:text-slate-600" />
-             )}
-             <span className={`text-sm font-semibold transition-colors ${config.includeBkashFee ? 'text-slate-900 dark:text-white' : 'text-slate-500 dark:text-slate-500'}`}>
-               {config.includeBkashFee ? `Included (+${tariffConfig.bkashCharge})` : 'Not Applicable'}
-             </span>
+          {config.includeBkashFee ? <CheckCircle2 className="w-6 h-6" /> : <CreditCard className="w-6 h-6" />}
+          <div className="text-left">
+             <div className="text-[9px] font-black uppercase tracking-widest opacity-80">{t('bkash_fee')}</div>
+             <div className="text-sm font-black leading-none mt-0.5">{config.includeBkashFee ? t('included') : t('not_included')}</div>
           </div>
-        </div>
+        </button>
 
-        {/* Late Fee Checkbox */}
-        <div 
-           className={`p-4 rounded-xl border transition-all duration-200 flex flex-col justify-center cursor-pointer shadow-sm ${config.includeLateFee ? 'border-indigo-300 dark:border-indigo-700 bg-slate-50 dark:bg-slate-800/50' : 'bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 hover:border-indigo-200 dark:hover:border-slate-600'}`} 
+        <button 
            onClick={() => onChange('includeLateFee', !config.includeLateFee)}
+           className={`h-16 rounded-[1.25rem] px-5 flex items-center gap-3 transition-all ${
+             config.includeLateFee 
+               ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/30' 
+               : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700'
+           }`}
         >
-          <label className={`block text-xs font-bold uppercase mb-2 flex items-center gap-1 cursor-pointer transition-colors ${config.includeLateFee ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-500 dark:text-slate-400'}`}>
-            {t('late_fee')} <Clock className="w-3 h-3" />
-          </label>
-          <div className="flex items-center gap-2">
-             {config.includeLateFee ? (
-               <CheckCircle2 className="w-6 h-6 text-indigo-600 dark:text-indigo-400" />
-             ) : (
-               <Circle className="w-6 h-6 text-slate-400 dark:text-slate-600" />
-             )}
-             <span className={`text-sm font-semibold transition-colors ${config.includeLateFee ? 'text-slate-900 dark:text-white' : 'text-slate-500 dark:text-slate-500'}`}>
-               {config.includeLateFee ? 'Included (VAT Total)' : 'Not Applicable'}
-             </span>
+          {config.includeLateFee ? <CheckCircle2 className="w-6 h-6" /> : <Clock className="w-6 h-6" />}
+          <div className="text-left">
+             <div className="text-[9px] font-black uppercase tracking-widest opacity-80">{t('late_fee')}</div>
+             <div className="text-sm font-black leading-none mt-0.5">{config.includeLateFee ? t('included') : t('not_included')}</div>
           </div>
-        </div>
+        </button>
       </div>
     </div>
   );

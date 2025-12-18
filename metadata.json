@@ -1,5 +1,5 @@
 {
-  "name": "TMSS Electricity Bill Splitter",
+  "name": "Electricity Bill Management",
   "description": "A precise electricity bill calculation and splitting tool designed for shared housing, featuring automatic rate derivation and cost distribution.",
   "requestFramePermissions": [
     "camera"
