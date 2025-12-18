@@ -15,12 +15,10 @@ import TrendsDashboard from './components/TrendsDashboard';
 import CloudSetupModal from './components/CloudSetupModal';
 import MobileNav from './components/MobileNav';
 import SkeletonLoader from './components/SkeletonLoader';
-import ModalWrapper from './components/ModalWrapper';
-import { Lightbulb, Database, Download, Settings, Users, Cloud, LogIn, LogOut, Moon, Sun, Menu, ArrowRight, PieChart, BarChart3, RefreshCw, Plus, ArrowLeft, X, History } from 'lucide-react';
+import { Lightbulb, Database, Download, Settings, Users, Cloud, LogIn, Moon, Sun, Menu, ArrowRight, PieChart, BarChart3, RefreshCw, Plus, ArrowLeft, X, History, FileText, FileSpreadsheet } from 'lucide-react';
 import { LanguageProvider, useLanguage } from './i18n';
 import { ThemeProvider, useTheme } from './components/ThemeContext';
-import { firebaseService } from './services/firebase';
-import { User } from 'firebase/auth';
+import { spreadsheetService } from './services/spreadsheet';
 
 const sortBills = (bills: SavedBill[]) => {
   return [...bills].sort((a, b) => {
@@ -36,7 +34,7 @@ const calculateBillBreakdown = (
   meters: MeterReading[], 
   tariffConfig: TariffConfig
 ): BillCalculationResult => {
-    const VAT_RATE = tariffConfig.vatRate;
+    const VAT_RATE = tariffConfig.vatRate; 
     const DEMAND_CHARGE = tariffConfig.demandCharge;
     const METER_RENT = tariffConfig.meterRent;
 
@@ -53,8 +51,8 @@ const calculateBillBreakdown = (
 
     const variableCostPool = config.totalBillPayable - DEMAND_CHARGE - METER_RENT - vatFixed;
     const calculatedRate = totalUnits > 0 ? variableCostPool / totalUnits : 0;
-
     const numUsers = meters.length;
+    
     const totalFixedPool = DEMAND_CHARGE + METER_RENT + vatFixed + config.bkashFee + lateFee;
     const fixedCostPerUser = numUsers > 0 ? totalFixedPool / numUsers : 0;
 
@@ -112,8 +110,6 @@ const AppContent: React.FC = () => {
   const [installPrompt, setInstallPrompt] = useState<any>(null);
   const [tariffConfig, setTariffConfig] = useState<TariffConfig>(DEFAULT_TARIFF_CONFIG);
   const [tenants, setTenants] = useState<Tenant[]>([]);
-  const [user, setUser] = useState<User | null>(null);
-  const [isFirebaseReady, setIsFirebaseReady] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
   const isFirstRender = useRef(true);
 
@@ -136,11 +132,11 @@ const AppContent: React.FC = () => {
     localStorage.setItem('tmss_draft_meters', JSON.stringify(meters));
     localStorage.setItem('tmss_draft_updatedAt', now.toString());
 
-    if (user && isFirebaseReady) {
+    if (spreadsheetService.isReady()) {
         setIsSyncing(true);
         const timer = setTimeout(async () => {
             try {
-                await firebaseService.saveDraft(user.uid, {
+                await spreadsheetService.saveDraft({
                     updatedAt: now,
                     config,
                     mainMeter,
@@ -150,58 +146,22 @@ const AppContent: React.FC = () => {
             } catch (e) {
                 setIsSyncing(false);
             }
-        }, 2000);
+        }, 5000); // 5s debounce for spreadsheet
         return () => clearTimeout(timer);
     }
-  }, [config, mainMeter, meters, user, isFirebaseReady]);
+  }, [config, mainMeter, meters]);
 
   useEffect(() => {
-    setIsFirebaseReady(firebaseService.isReady());
-    if (firebaseService.isReady() && firebaseService.auth) {
-       firebaseService.auth.onAuthStateChanged((u) => {
-         setUser(u);
-       });
-    }
-  }, []);
-
-  useEffect(() => {
-    const loadData = async () => {
-       setIsSyncing(true);
-       if (user && isFirebaseReady) {
-          try {
-             const cloudHistory = await firebaseService.getBills(user.uid);
-             setHistory(sortBills(cloudHistory));
-             const cloudTariff = await firebaseService.getTariff(user.uid);
-             if (cloudTariff) setTariffConfig(cloudTariff);
-             const cloudTenants = await firebaseService.getTenants(user.uid);
-             setTenants(cloudTenants);
-             const cloudDraft = await firebaseService.getDraft(user.uid);
-             const localUpdatedAt = parseInt(localStorage.getItem('tmss_draft_updatedAt') || '0');
-             if (cloudDraft && cloudDraft.updatedAt > localUpdatedAt) {
-                 setConfig(cloudDraft.config);
-                 setMainMeter(cloudDraft.mainMeter);
-                 setMeters(cloudDraft.meters);
-                 localStorage.setItem('tmss_draft_updatedAt', cloudDraft.updatedAt.toString());
-             }
-          } catch (e) {}
-       } else {
-          const savedHistory = localStorage.getItem('tmss_bill_history');
-          if (savedHistory) {
-            try { setHistory(sortBills(JSON.parse(savedHistory))); } catch (e) {}
-          }
-          const savedTariff = localStorage.getItem('tmss_tariff_config');
-          if (savedTariff) {
-             try { setTariffConfig(JSON.parse(savedTariff)); } catch (e) {}
-          }
-          const savedTenants = localStorage.getItem('tmss_tenants');
-          if (savedTenants) {
-             try { setTenants(JSON.parse(savedTenants)); } catch (e) {}
-          }
-       }
-       setIsSyncing(false);
+    const loadLocal = () => {
+      const savedHistory = localStorage.getItem('tmss_bill_history');
+      if (savedHistory) setHistory(sortBills(JSON.parse(savedHistory)));
+      const savedTariff = localStorage.getItem('tmss_tariff_config');
+      if (savedTariff) setTariffConfig(JSON.parse(savedTariff));
+      const savedTenants = localStorage.getItem('tmss_tenants');
+      if (savedTenants) setTenants(JSON.parse(savedTenants));
     };
-    loadData();
-  }, [user, isFirebaseReady]);
+    loadLocal();
+  }, []);
 
   useEffect(() => {
     const handler = (e: any) => {
@@ -236,19 +196,17 @@ const AppContent: React.FC = () => {
       if (config.includeBkashFee) {
           setConfig(prev => ({ ...prev, bkashFee: newConfig.bkashCharge }));
       }
-      if (user && isFirebaseReady) {
-         await firebaseService.saveTariff(user.uid, newConfig);
-      } else {
-         localStorage.setItem('tmss_tariff_config', JSON.stringify(newConfig));
+      localStorage.setItem('tmss_tariff_config', JSON.stringify(newConfig));
+      if (spreadsheetService.isReady()) {
+         await spreadsheetService.saveTariff(newConfig);
       }
   };
 
   const handleTenantsUpdate = async (newTenants: Tenant[]) => {
       setTenants(newTenants);
-      if (user && isFirebaseReady) {
-         await firebaseService.saveTenants(user.uid, newTenants);
-      } else {
-         localStorage.setItem('tmss_tenants', JSON.stringify(newTenants));
+      localStorage.setItem('tmss_tenants', JSON.stringify(newTenants));
+      if (spreadsheetService.isReady()) {
+         await spreadsheetService.saveTenants(newTenants);
       }
   };
 
@@ -273,10 +231,10 @@ const AppContent: React.FC = () => {
     };
     const updatedHistory = sortBills([newRecord, ...history]);
     setHistory(updatedHistory);
-    if (user && isFirebaseReady) {
-       await firebaseService.saveBill(user.uid, newRecord);
-    } else {
-       localStorage.setItem('tmss_bill_history', JSON.stringify(updatedHistory));
+    localStorage.setItem('tmss_bill_history', JSON.stringify(updatedHistory));
+    
+    if (spreadsheetService.isReady()) {
+       await spreadsheetService.saveBill(newRecord);
     }
     alert(t('saved_success'));
   };
@@ -291,20 +249,18 @@ const AppContent: React.FC = () => {
 
   const handleViewHistory = (record: SavedBill) => {
     setViewedBill(record);
-    setCurrentView('input');
+    // Changed from 'input' to 'report' to show finalized view as requested
+    setCurrentView('report');
   };
 
   const applyBillRecord = (record: SavedBill) => {
-      const legacyConfig = record.config as any;
-      const includeLateFee = legacyConfig.includeLateFee !== undefined ? legacyConfig.includeLateFee : (legacyConfig.lateFee && legacyConfig.lateFee > 0);
-      const includeBkashFee = legacyConfig.includeBkashFee !== undefined ? legacyConfig.includeBkashFee : (legacyConfig.bkashFee > 0);
       const cleanConfig: BillConfig = {
         month: record.config.month,
         dateGenerated: record.config.dateGenerated,
         totalBillPayable: record.config.totalBillPayable,
         bkashFee: record.config.bkashFee,
-        includeLateFee: includeLateFee,
-        includeBkashFee: includeBkashFee
+        includeLateFee: record.config.includeLateFee || false,
+        includeBkashFee: record.config.includeBkashFee || false
       };
       setConfig(cleanConfig);
       setMainMeter(record.mainMeter);
@@ -315,41 +271,12 @@ const AppContent: React.FC = () => {
     if (window.confirm(t('confirm_delete'))) {
       const updatedHistory = history.filter(h => h.id !== id);
       setHistory(updatedHistory);
-      if (viewedBill?.id === id) {
-          setViewedBill(null);
-          setCurrentView('home');
-      }
-      if (user && isFirebaseReady) {
-         await firebaseService.deleteBill(user.uid, id);
-      } else {
-         localStorage.setItem('tmss_bill_history', JSON.stringify(updatedHistory));
-      }
+      localStorage.setItem('tmss_bill_history', JSON.stringify(updatedHistory));
     }
-  };
-
-  const handleLogin = async () => {
-    if (!isFirebaseReady) {
-      setActiveModal('cloud');
-      setIsMenuOpen(false);
-      return;
-    }
-    try {
-      await firebaseService.login();
-      setIsMenuOpen(false);
-    } catch (e) {}
-  };
-
-  const handleLogout = async () => {
-    await firebaseService.logout();
-    setHistory([]); 
-    setIsMenuOpen(false);
   };
 
   const onCloudConnected = () => {
-    setIsFirebaseReady(true);
-    if (firebaseService.auth) {
-      firebaseService.auth.onAuthStateChanged(setUser);
-    }
+    setIsMenuOpen(false);
   };
 
   const activeConfig = viewedBill ? viewedBill.config : config;
@@ -372,33 +299,10 @@ const AppContent: React.FC = () => {
   const renderView = () => {
     switch(currentView) {
       case 'home':
-        return (
-          <div className="animate-in fade-in duration-500">
-            <Dashboard config={config} result={calculationResult} mainMeter={mainMeter} />
-          </div>
-        );
+        return <Dashboard config={config} result={calculationResult} mainMeter={mainMeter} />;
       case 'input':
         return (
-          <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-            {viewedBill && (
-                <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800/50 p-4 rounded-2xl flex items-center justify-between shadow-sm">
-                   <div className="flex items-center gap-3">
-                      <div className="bg-amber-100 dark:bg-amber-900/50 p-2 rounded-xl text-amber-600 dark:text-amber-400">
-                         <History className="w-5 h-5" />
-                      </div>
-                      <div>
-                         <h4 className="font-black text-amber-900 dark:text-amber-200 text-sm uppercase tracking-tight">{t('bill_report')} - {translateMonth(viewedBill.config.month)}</h4>
-                         <p className="text-[10px] font-bold text-amber-700 dark:text-amber-400 uppercase tracking-widest">{t('saved_at')} {new Date(viewedBill.savedAt).toLocaleDateString()}</p>
-                      </div>
-                   </div>
-                   <button 
-                      onClick={() => handleViewChange('history')}
-                      className="p-2 bg-white dark:bg-slate-800 text-slate-500 hover:text-amber-600 rounded-xl transition-all shadow-sm"
-                   >
-                      <X className="w-5 h-5" />
-                   </button>
-                </div>
-            )}
+          <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4">
             <BillConfiguration 
                 config={activeConfig} 
                 onChange={handleConfigChange} 
@@ -420,40 +324,32 @@ const AppContent: React.FC = () => {
           </div>
         );
       case 'estimator':
-        return (
-          <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-              <BillEstimator tariffConfig={tariffConfig} />
-          </div>
-        );
+        return <BillEstimator tariffConfig={tariffConfig} />;
       case 'report':
         return (
-          <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-              <CalculationSummary 
-                  result={calculationResult} 
-                  config={activeConfig} 
-                  mainMeter={activeMainMeter}
-                  meters={activeMeters}
-                  onSaveHistory={saveToHistory}
-                  tariffConfig={tariffConfig}
-                  isHistorical={!!viewedBill}
-                  onClose={() => handleViewChange('home')}
-              />
-          </div>
+          <CalculationSummary 
+              result={calculationResult} 
+              config={activeConfig} 
+              mainMeter={activeMainMeter}
+              meters={activeMeters}
+              onSaveHistory={saveToHistory}
+              tariffConfig={tariffConfig}
+              isHistorical={!!viewedBill}
+              onClose={() => handleViewChange('home')}
+          />
         );
       case 'history':
         return (
-          <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-              <BillHistory 
-                  history={history} 
-                  onLoad={loadFromHistory} 
-                  onDelete={deleteFromHistory} 
-                  onViewReport={handleViewHistory}
-              />
-          </div>
+          <BillHistory 
+              history={history} 
+              onLoad={loadFromHistory} 
+              onDelete={deleteFromHistory} 
+              onViewReport={handleViewHistory}
+          />
         );
       case 'stats':
         return (
-          <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 space-y-4">
+          <div className="space-y-4">
              <button onClick={() => handleViewChange('home')} className="flex items-center gap-2 text-sm font-bold text-slate-500 hover:text-emerald-600 transition-colors px-2">
                 <ArrowLeft className="w-4 h-4" /> {t('back')}
              </button>
@@ -462,7 +358,7 @@ const AppContent: React.FC = () => {
         );
       case 'trends':
         return (
-          <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 space-y-4">
+          <div className="space-y-4">
              <button onClick={() => handleViewChange('home')} className="flex items-center gap-2 text-sm font-bold text-slate-500 hover:text-emerald-600 transition-colors px-2">
                 <ArrowLeft className="w-4 h-4" /> {t('back')}
              </button>
@@ -471,7 +367,7 @@ const AppContent: React.FC = () => {
         );
       case 'tenants':
         return (
-          <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 space-y-4">
+          <div className="space-y-4">
              <button onClick={() => handleViewChange('home')} className="flex items-center gap-2 text-sm font-bold text-slate-500 hover:text-emerald-600 transition-colors px-2">
                 <ArrowLeft className="w-4 h-4" /> {t('back')}
              </button>
@@ -480,7 +376,7 @@ const AppContent: React.FC = () => {
         );
       case 'tariff':
         return (
-          <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 space-y-4">
+          <div className="space-y-4">
              <button onClick={() => handleViewChange('home')} className="flex items-center gap-2 text-sm font-bold text-slate-500 hover:text-emerald-600 transition-colors px-2">
                 <ArrowLeft className="w-4 h-4" /> {t('back')}
              </button>
@@ -492,9 +388,11 @@ const AppContent: React.FC = () => {
     }
   };
 
+  const isCloudReady = spreadsheetService.isReady();
+
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 pb-28 transition-colors duration-200">
-      <header className="bg-emerald-700 dark:bg-slate-950 sticky top-0 z-30 no-print px-4 pt-safe flex items-end justify-between border-b border-emerald-800 dark:border-slate-800 transition-colors duration-200 shadow-md shadow-emerald-900/10 min-h-[4rem]">
+      <header className="bg-emerald-700 dark:bg-slate-950 sticky top-0 z-30 no-print px-4 pt-safe flex items-end justify-between border-b border-emerald-800 dark:border-slate-800 transition-colors duration-200 shadow-md min-h-[4rem]">
         <div className="flex items-center gap-3 w-full justify-between pb-3">
           <div className="flex items-center gap-3">
               <div className="bg-white/20 p-2.5 rounded-2xl">
@@ -503,10 +401,10 @@ const AppContent: React.FC = () => {
               <div className="overflow-hidden">
                 <h1 className="text-base sm:text-lg font-black text-white leading-none truncate pr-2">{t('app_title')}</h1>
                 <div className="flex items-center gap-1.5 mt-1">
-                  {user ? (
+                  {isCloudReady ? (
                       <div className="flex items-center gap-1 text-[9px] font-black text-emerald-100 uppercase tracking-widest">
-                          <Cloud className="w-2.5 h-2.5" />
-                          {t('cloud')}
+                          <FileSpreadsheet className="w-2.5 h-2.5" />
+                          Sheets Cloud
                       </div>
                   ) : (
                       <div className="flex items-center gap-1 text-[9px] font-black text-white/50 uppercase tracking-widest">
@@ -538,10 +436,6 @@ const AppContent: React.FC = () => {
                 <>
                   <div className="fixed inset-0 z-40 bg-transparent" onClick={() => setIsMenuOpen(false)}></div>
                   <div className="absolute right-0 top-full mt-3 w-64 bg-white dark:bg-slate-900 rounded-[2rem] shadow-2xl border border-slate-200 dark:border-slate-800 py-3 z-50 animate-in fade-in slide-in-from-top-2">
-                    <div className="px-5 py-2 mb-2">
-                      <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{t('actions')}</div>
-                    </div>
-                    
                     <button onClick={() => { handleViewChange('stats'); setIsMenuOpen(false); }} className="w-full text-left px-5 py-3 text-sm font-bold text-slate-700 dark:text-slate-200 hover:bg-emerald-50 dark:hover:bg-slate-800 flex items-center gap-3 transition-colors">
                       <PieChart className="w-5 h-5 text-emerald-500" /> {t('consumption_share')}
                     </button>
@@ -560,6 +454,9 @@ const AppContent: React.FC = () => {
                     <button onClick={() => { handleViewChange('tariff'); setIsMenuOpen(false); }} className="w-full text-left px-5 py-3 text-sm font-bold text-slate-700 dark:text-slate-200 hover:bg-emerald-50 dark:hover:bg-slate-800 flex items-center gap-3 transition-colors">
                       <Settings className="w-5 h-5 text-slate-500" /> {t('settings')}
                     </button>
+                    <button onClick={() => { setActiveModal('cloud'); setIsMenuOpen(false); }} className="w-full text-left px-5 py-3 text-sm font-bold text-slate-700 dark:text-slate-200 hover:bg-emerald-50 dark:hover:bg-slate-800 flex items-center gap-3 transition-colors">
+                      <Cloud className="w-5 h-5 text-indigo-500" /> {t('cloud_setup')}
+                    </button>
                     
                     <div className="mx-4 my-2 border-t border-slate-100 dark:border-slate-800"></div>
 
@@ -576,16 +473,6 @@ const AppContent: React.FC = () => {
                         <button onClick={() => setLanguage('bn')} className={`flex-1 py-1 text-[10px] font-black rounded-lg transition-all ${language === 'bn' ? 'bg-white dark:bg-slate-700 text-emerald-600 shadow-sm' : 'text-slate-400'}`}>বাংলা</button>
                       </div>
                     </div>
-
-                    {user ? (
-                      <button onClick={handleLogout} className="w-full text-left px-5 py-4 text-sm font-bold text-red-500 hover:bg-red-50 dark:hover:bg-red-900/10 flex items-center gap-3 mt-1">
-                          <LogOut className="w-5 h-5" /> {t('logout')}
-                      </button>
-                    ) : (
-                      <button onClick={handleLogin} className="w-full text-left px-5 py-4 text-sm font-bold text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-900/10 flex items-center gap-3 mt-1">
-                          <LogIn className="w-5 h-5" /> {t('login')}
-                      </button>
-                    )}
                   </div>
                 </>
               )}
@@ -595,11 +482,7 @@ const AppContent: React.FC = () => {
       </header>
 
       <main className="max-w-3xl mx-auto px-4 py-4 print:p-0">
-        {isSyncing && history.length === 0 ? (
-           <SkeletonLoader />
-        ) : (
-          renderView()
-        )}
+        {renderView()}
       </main>
 
       <MobileNav currentView={currentView as any} onChangeView={handleViewChange} />

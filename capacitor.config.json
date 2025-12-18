@@ -1,6 +1,6 @@
 
 {
-  "appId": "com.tmss.billsplitter",
+  "appId": "com.electricity.bill.manager",
   "appName": "TMSS Bill Splitter",
   "webDir": "dist",
   "server": {

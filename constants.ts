@@ -1,5 +1,5 @@
 
-import { MeterReading, TariffConfig } from "./types";
+import { MeterReading, TariffConfig, FirebaseConfigJson } from "./types";
 
 export const INITIAL_CONFIG = {
   month: new Date().toLocaleString('default', { month: 'long' }),
@@ -35,4 +35,14 @@ export const DEFAULT_TARIFF_CONFIG: TariffConfig = {
     { limit: 300, rate: 7.59 },
     { limit: 400, rate: 8.02 },
   ]
+};
+
+// Added missing DEFAULT_FIREBASE_CONFIG used by firebase service fallback
+export const DEFAULT_FIREBASE_CONFIG: FirebaseConfigJson = {
+  apiKey: "",
+  authDomain: "",
+  projectId: "",
+  storageBucket: "",
+  messagingSenderId: "",
+  appId: ""
 };

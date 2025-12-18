@@ -19,15 +19,13 @@ interface CalculationSummaryProps {
 
 const CalculationSummary: React.FC<CalculationSummaryProps> = ({ result, config, mainMeter, meters, onSaveHistory, tariffConfig, isHistorical = false, onClose }) => {
   const { t, formatNumber, translateMonth, formatDateLocalized } = useLanguage();
-  // Fixed: Declare reportRef with const
   const reportRef = useRef<HTMLDivElement>(null);
   const [isGeneratingImage, setIsGeneratingImage] = useState(false);
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
 
-  // Use Dynamic Config
+  // Constants for subtext
   const DEMAND_CHARGE = tariffConfig.demandCharge;
   const METER_RENT = tariffConfig.meterRent;
-  const VAT_RATE_PCT = tariffConfig.vatRate * 100;
 
   const handlePrint = () => {
     window.print();
@@ -164,10 +162,7 @@ const CalculationSummary: React.FC<CalculationSummaryProps> = ({ result, config,
     }
   };
 
-  const formatMeterDisplay = (val: string) => {
-    const num = parseInt(val);
-    return isNaN(num) ? val : num.toString();
-  };
+  const mainMeterUnits = Math.max(0, mainMeter.current - mainMeter.previous);
 
   return (
     <div className="bg-white dark:bg-slate-900 shadow-xl rounded-xl overflow-hidden border border-slate-200 dark:border-slate-800 print:shadow-none print:border-none print:m-0 print:p-0 w-full transition-colors duration-200">
@@ -189,7 +184,7 @@ const CalculationSummary: React.FC<CalculationSummaryProps> = ({ result, config,
             {!isHistorical && (
               <button 
                 onClick={onSaveHistory}
-                className="flex-1 sm:flex-none flex items-center justify-center gap-2 text-sm font-medium text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-emerald-50 dark:hover:bg-slate-800 hover:text-emerald-600 dark:hover:text-emerald-400 px-3 py-2 rounded-lg transition-colors shadow-sm"
+                className="flex-1 sm:flex-none flex items-center justify-center gap-2 text-sm font-medium text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-emerald-50 dark:hover:bg-slate-700 hover:text-emerald-600 dark:hover:text-emerald-400 px-3 py-2 rounded-lg transition-colors shadow-sm"
                 title={t('save_history')}
               >
                  <Save className="w-4 h-4" /> <span className="sm:hidden lg:inline">{t('save_history')}</span>
@@ -225,8 +220,8 @@ const CalculationSummary: React.FC<CalculationSummaryProps> = ({ result, config,
           </div>
        </div>
 
-       {/* Printable Content - Optimized Emerald Header */}
-       <div ref={reportRef} className="p-4 sm:p-8 space-y-6 sm:space-y-8 print:p-0 print:space-y-6 bg-white dark:bg-slate-900 min-h-[500px] print:min-h-0 transition-colors duration-200">
+       {/* Printable Content */}
+       <div ref={reportRef} className="p-4 sm:p-8 space-y-6 sm:space-y-10 print:p-0 print:space-y-6 bg-white dark:bg-slate-900 min-h-[500px] print:min-h-0 transition-colors duration-200">
           
           {/* Header */}
           <div className="text-center border-b-2 border-emerald-800 dark:border-emerald-100 pb-4 sm:pb-6 print:pb-4">
@@ -243,8 +238,105 @@ const CalculationSummary: React.FC<CalculationSummaryProps> = ({ result, config,
              </div>
           </div>
 
-          {/* Individual Bills - Final Total with Emerald Highlight */}
-          <div>
+          {/* Conditional Sections: Only shown in History View */}
+          {isHistorical && (
+            <>
+              {/* Costs Configuration Section */}
+              <div className="animate-in fade-in duration-500">
+                <h3 className="text-sm font-bold text-slate-900 dark:text-white uppercase border-b border-slate-200 dark:border-slate-700 pb-2 mb-4 tracking-tight">{t('costs_configuration')}</h3>
+                <div className="grid grid-cols-2 gap-x-12 gap-y-4 text-sm px-1">
+                  <div className="flex justify-between items-center border-b border-slate-100 dark:border-slate-800 pb-1">
+                    <span className="text-slate-600 dark:text-slate-400 font-medium">{t('total_bill_payable')}</span>
+                    <span className="font-bold text-slate-900 dark:text-white">{formatNumber(config.totalBillPayable)}</span>
+                  </div>
+                  <div className="flex justify-between items-center border-b border-slate-100 dark:border-slate-800 pb-1">
+                    <span className="text-slate-600 dark:text-slate-400 font-medium">{t('calculated_rate')}</span>
+                    <span className="font-bold text-emerald-600 dark:text-emerald-400">{formatNumber(result.calculatedRate.toFixed(2))}</span>
+                  </div>
+                  <div className="flex justify-between items-center border-b border-slate-100 dark:border-slate-800 pb-1">
+                    <span className="text-slate-600 dark:text-slate-400 font-medium">{t('demand_charge')}</span>
+                    <span className="font-bold text-slate-900 dark:text-white">{formatNumber(DEMAND_CHARGE)}</span>
+                  </div>
+                  <div className="flex justify-between items-center border-b border-slate-100 dark:border-slate-800 pb-1">
+                    <span className="text-slate-600 dark:text-slate-400 font-medium">{t('meter_rent')}</span>
+                    <span className="font-bold text-slate-900 dark:text-white">{formatNumber(METER_RENT)}</span>
+                  </div>
+                  
+                  <div className="flex justify-between items-start border-b border-slate-100 dark:border-slate-800 pb-1">
+                    <div className="flex flex-col">
+                      <span className="text-slate-600 dark:text-slate-400 font-medium">{t('vat_total')}</span>
+                      <span className="text-[10px] text-slate-400 italic">Unit Uses Bill+Demand+Rent*5%</span>
+                    </div>
+                    <span className="font-bold text-slate-900 dark:text-white">{formatNumber(result.vatTotal.toFixed(2))}</span>
+                  </div>
+                  <div className="flex justify-between items-start border-b border-slate-100 dark:border-slate-800 pb-1">
+                    <div className="flex flex-col">
+                      <span className="text-slate-600 dark:text-slate-400 font-medium">{t('vat_distributed')}</span>
+                      <span className="text-[10px] text-slate-400 italic">Unit Uses Bill*5%</span>
+                    </div>
+                    <span className="font-bold text-slate-900 dark:text-white">{formatNumber(result.vatDistributed.toFixed(2))}</span>
+                  </div>
+                  <div className="flex justify-between items-start border-b border-slate-100 dark:border-slate-800 pb-1">
+                    <div className="flex flex-col">
+                      <span className="text-slate-600 dark:text-slate-400 font-medium">{t('vat_fixed')}</span>
+                      <span className="text-[10px] text-slate-400 italic">Demand+Rent*5%</span>
+                    </div>
+                    <span className="font-bold text-slate-900 dark:text-white">{formatNumber(result.vatFixed.toFixed(2))}</span>
+                  </div>
+                  <div className="flex justify-between items-center border-b border-slate-100 dark:border-slate-800 pb-1">
+                    <span className="text-slate-600 dark:text-slate-400 font-medium">{t('bkash_fee')}</span>
+                    <span className="font-bold text-slate-900 dark:text-white">{config.bkashFee > 0 ? formatNumber(config.bkashFee) : '-'}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Meter Readings Table */}
+              <div className="animate-in fade-in duration-500 delay-150">
+                <h3 className="text-sm font-bold text-slate-900 dark:text-white uppercase border-b border-slate-200 dark:border-slate-700 pb-2 mb-4 tracking-tight">{t('meter_readings')}</h3>
+                <div className="overflow-x-auto rounded-lg border border-slate-100 dark:border-slate-800 print:border-slate-200">
+                  <table className="w-full text-left border-collapse text-xs sm:text-sm">
+                      <thead className="bg-slate-50 dark:bg-slate-800 print:bg-slate-50">
+                        <tr className="text-slate-500 dark:text-slate-400 uppercase font-black text-[10px]">
+                            <th className="px-4 py-3">{t('name')}</th>
+                            <th className="px-4 py-3 text-center">{t('meter_no')}</th>
+                            <th className="px-4 py-3 text-right">{t('previous')}</th>
+                            <th className="px-4 py-3 text-right">{t('current')}</th>
+                            <th className="px-4 py-3 text-right">{t('unit')}</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100 dark:divide-slate-800 print:divide-slate-200">
+                        <tr className="bg-slate-50/50 dark:bg-slate-800/20 font-bold">
+                            <td className="px-4 py-3 text-slate-900 dark:text-white">{t('main_meter')}</td>
+                            <td className="px-4 py-3 text-center text-slate-600 dark:text-slate-400">{formatNumber(mainMeter.meterNo)}</td>
+                            <td className="px-4 py-3 text-right text-slate-600 dark:text-slate-400">{formatNumber(mainMeter.previous)}</td>
+                            <td className="px-4 py-3 text-right text-slate-600 dark:text-slate-400">{formatNumber(mainMeter.current)}</td>
+                            <td className="px-4 py-3 text-right text-slate-900 dark:text-white">{formatNumber(mainMeterUnits)}</td>
+                        </tr>
+                        {meters.map(m => {
+                            const u = Math.max(0, m.current - m.previous);
+                            return (
+                              <tr key={m.id}>
+                                <td className="px-4 py-2.5 text-slate-700 dark:text-slate-300">{t(m.name)}</td>
+                                <td className="px-4 py-2.5 text-center text-slate-500 dark:text-slate-400">{formatNumber(m.meterNo)}</td>
+                                <td className="px-4 py-2.5 text-right text-slate-500 dark:text-slate-400">{formatNumber(m.previous)}</td>
+                                <td className="px-4 py-2.5 text-right text-slate-500 dark:text-slate-400">{formatNumber(m.current)}</td>
+                                <td className="px-4 py-2.5 text-right font-bold text-slate-900 dark:text-white">{formatNumber(u)}</td>
+                              </tr>
+                            );
+                        })}
+                        <tr className="font-bold uppercase bg-emerald-50/20 dark:bg-black">
+                            <td colSpan={4} className="px-4 py-3 text-right text-[10px] tracking-widest text-slate-500 dark:text-slate-400">{t('total_user_units')}</td>
+                            <td className="px-4 py-3 text-right text-slate-900 dark:text-white">{formatNumber(result.totalUnits)}</td>
+                        </tr>
+                      </tbody>
+                  </table>
+                </div>
+              </div>
+            </>
+          )}
+
+          {/* Individual Bills - Final Split (Always Shown) */}
+          <div className="animate-in fade-in duration-500 delay-300">
              <h3 className="text-sm font-bold text-slate-900 dark:text-white uppercase border-b border-slate-200 dark:border-slate-700 pb-2 mb-4 tracking-tight">{t('final_split')}</h3>
              <div className="overflow-x-auto rounded-lg border border-slate-200 dark:border-slate-700 print:border-slate-300">
                <table className="w-full text-left border-collapse">

@@ -52,7 +52,7 @@ export interface Slab {
 export interface TariffConfig {
   demandCharge: number;
   meterRent: number;
-  vatRate: number; // Stored as decimal (e.g., 0.05 for 5%)
+  vatRate: number; 
   slabs: Slab[];
   bkashCharge: number;
 }
@@ -64,6 +64,19 @@ export interface Tenant {
   email?: string;
 }
 
+export interface SpreadsheetConfig {
+  webAppUrl: string;
+  spreadsheetId?: string;
+}
+
+export interface DraftData {
+  updatedAt: number;
+  config: BillConfig;
+  mainMeter: MeterReading;
+  meters: MeterReading[];
+}
+
+// Added FirebaseConfigJson interface
 export interface FirebaseConfigJson {
   apiKey: string;
   authDomain: string;
@@ -72,11 +85,4 @@ export interface FirebaseConfigJson {
   messagingSenderId: string;
   appId: string;
   measurementId?: string;
-}
-
-export interface DraftData {
-  updatedAt: number;
-  config: BillConfig;
-  mainMeter: MeterReading;
-  meters: MeterReading[];
 }

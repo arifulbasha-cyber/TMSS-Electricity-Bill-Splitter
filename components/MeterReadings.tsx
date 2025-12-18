@@ -109,14 +109,14 @@ const MeterReadings: React.FC<MeterReadingsProps> = ({
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between px-1">
-        <div>
+        <div className="flex flex-col">
           <h2 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-slate-100 tracking-tight">{t('meter_readings')}</h2>
           <p className="text-[10px] sm:text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest">{readings.length} {t('tenants')}</p>
         </div>
         {!readOnly && (
             <button 
                 onClick={handleAdd}
-                className="flex items-center gap-1.5 sm:gap-2 bg-emerald-600 dark:bg-emerald-500 text-white px-3 sm:px-4 py-2 rounded-xl sm:rounded-2xl font-bold text-xs sm:text-sm shadow-lg shadow-emerald-600/20 active:scale-95 transition-all"
+                className="flex items-center gap-1.5 sm:gap-2 bg-emerald-600 dark:bg-emerald-500 text-white px-3 sm:px-4 py-2.5 rounded-xl sm:rounded-2xl font-bold text-xs sm:text-sm shadow-lg shadow-emerald-600/20 hover:shadow-emerald-600/30 hover:bg-emerald-700 dark:hover:bg-emerald-400 active:scale-95 transition-all"
             >
                 <Plus className="w-4 h-4" /> 
                 <span>{t('add_meter')}</span>
