@@ -456,9 +456,9 @@ const AppContent: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 pb-safe">
-      {/* Immersive Edge-to-Edge Header */}
+      {/* Immersive Edge-to-Edge Header - Using pt-safe to bleed color into status bar area */}
       <header className="bg-emerald-700 dark:bg-slate-900 sticky top-0 z-30 no-print pt-safe border-b border-emerald-800 dark:border-slate-800 shadow-md">
-        <div className="px-4 h-20 flex items-center justify-between">
+        <div className="px-4 h-16 sm:h-20 flex items-center justify-between">
           <div className="flex items-center gap-3">
               <div className="bg-white/20 p-2.5 rounded-2xl">
                 <Lightbulb className="w-5 h-5 text-white" />
