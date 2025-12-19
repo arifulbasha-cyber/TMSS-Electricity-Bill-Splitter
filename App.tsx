@@ -1,5 +1,5 @@
 
-import React, { useState, useMemo, useEffect, useRef } from 'react';
+import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import { BillConfig, MeterReading, BillCalculationResult, UserCalculation, SavedBill, TariffConfig, Tenant } from './types';
 import { INITIAL_CONFIG, INITIAL_METERS, INITIAL_MAIN_METER, DEFAULT_TARIFF_CONFIG } from './constants';
 import Dashboard from './components/Dashboard';
@@ -15,7 +15,7 @@ import TrendsDashboard from './components/TrendsDashboard';
 import CloudSetupModal from './components/CloudSetupModal';
 import MobileNav from './components/MobileNav';
 import SkeletonLoader from './components/SkeletonLoader';
-import { Lightbulb, Database, Download, Settings, Users, Cloud, LogIn, Moon, Sun, Menu, ArrowRight, PieChart, BarChart3, RefreshCw, Plus, ArrowLeft, X, History, FileText, FileSpreadsheet } from 'lucide-react';
+import { Lightbulb, Database, Download, Settings, Users, Cloud, Moon, Sun, Menu, ArrowRight, PieChart, BarChart3, RefreshCw, Plus, ArrowLeft, FileSpreadsheet } from 'lucide-react';
 import { LanguageProvider, useLanguage } from './i18n';
 import { ThemeProvider, useTheme } from './components/ThemeContext';
 import { spreadsheetService } from './services/spreadsheet';
@@ -85,7 +85,7 @@ const calculateBillBreakdown = (
 };
 
 const AppContent: React.FC = () => {
-  const { t, language, setLanguage, translateMonth } = useLanguage();
+  const { t, language, setLanguage } = useLanguage();
   const { theme, toggleTheme } = useTheme();
   type AppView = 'home' | 'input' | 'estimator' | 'report' | 'history' | 'stats' | 'trends' | 'tenants' | 'tariff';
   const [currentView, setCurrentView] = useState<AppView>('home');
@@ -93,48 +93,129 @@ const AppContent: React.FC = () => {
   const [viewedBill, setViewedBill] = useState<SavedBill | null>(null);
   const [activeModal, setActiveModal] = useState<'none' | 'cloud'>('none');
 
-  const [config, setConfig] = useState<BillConfig>(() => {
-    const saved = localStorage.getItem('tmss_draft_config');
-    return saved ? JSON.parse(saved) : INITIAL_CONFIG;
-  });
-  const [mainMeter, setMainMeter] = useState<MeterReading>(() => {
-    const saved = localStorage.getItem('tmss_draft_main_meter');
-    return saved ? JSON.parse(saved) : INITIAL_MAIN_METER;
-  });
-  const [meters, setMeters] = useState<MeterReading[]>(() => {
-    const saved = localStorage.getItem('tmss_draft_meters');
-    return saved ? JSON.parse(saved) : INITIAL_METERS;
-  });
-
+  // Core State
+  const [config, setConfig] = useState<BillConfig>(INITIAL_CONFIG);
+  const [mainMeter, setMainMeter] = useState<MeterReading>(INITIAL_MAIN_METER);
+  const [meters, setMeters] = useState<MeterReading[]>(INITIAL_METERS);
   const [history, setHistory] = useState<SavedBill[]>([]);
-  const [installPrompt, setInstallPrompt] = useState<any>(null);
   const [tariffConfig, setTariffConfig] = useState<TariffConfig>(DEFAULT_TARIFF_CONFIG);
   const [tenants, setTenants] = useState<Tenant[]>([]);
+
+  // Sync State
   const [isSyncing, setIsSyncing] = useState(false);
+  const [isInitialLoading, setIsInitialLoading] = useState(false);
+  const lastCloudSyncTimestamp = useRef<number>(0);
   const isFirstRender = useRef(true);
+  const isInternalChange = useRef(false);
 
-  const handleViewChange = (view: AppView) => {
-      setCurrentView(view);
-      if (view !== 'report' && view !== 'input') {
-        setViewedBill(null);
+  // 1. Pull Data from Cloud (Central Database)
+  const fetchCloudData = useCallback(async (isSilent = false) => {
+    if (!spreadsheetService.isReady()) return;
+    
+    if (!isSilent) setIsInitialLoading(true);
+    setIsSyncing(true);
+    
+    try {
+      const [cloudDraft, cloudHistory, cloudTariff, cloudTenants] = await Promise.all([
+        spreadsheetService.getDraft(),
+        spreadsheetService.getBills(),
+        spreadsheetService.getTariff(),
+        spreadsheetService.getTenants()
+      ]);
+
+      // Only update local state if cloud data is newer or if it's the first pull
+      if (cloudDraft && cloudDraft.updatedAt > lastCloudSyncTimestamp.current) {
+        isInternalChange.current = true; // Prevent the update from triggering a push back
+        setConfig(cloudDraft.config);
+        setMainMeter(cloudDraft.mainMeter);
+        setMeters(cloudDraft.meters);
+        lastCloudSyncTimestamp.current = cloudDraft.updatedAt;
       }
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
+      
+      if (cloudHistory && cloudHistory.length > 0) {
+        setHistory(sortBills(cloudHistory));
+        localStorage.setItem('tmss_bill_history', JSON.stringify(cloudHistory));
+      }
 
+      if (cloudTariff) {
+        setTariffConfig(cloudTariff);
+        localStorage.setItem('tmss_tariff_config', JSON.stringify(cloudTariff));
+      }
+
+      if (cloudTenants) {
+        setTenants(cloudTenants);
+        localStorage.setItem('tmss_tenants', JSON.stringify(cloudTenants));
+      }
+
+      console.log("Cloud sync complete.");
+    } catch (error) {
+      console.error("Cloud pull failed:", error);
+    } finally {
+      setIsInitialLoading(false);
+      setIsSyncing(false);
+      // Reset the internal change flag after state has had time to update
+      setTimeout(() => { isInternalChange.current = false; }, 100);
+    }
+  }, []);
+
+  // Initial Load from Cloud or Local
+  useEffect(() => {
+    const savedHistory = localStorage.getItem('tmss_bill_history');
+    if (savedHistory) setHistory(sortBills(JSON.parse(savedHistory)));
+    
+    const savedTariff = localStorage.getItem('tmss_tariff_config');
+    if (savedTariff) setTariffConfig(JSON.parse(savedTariff));
+    
+    const savedTenants = localStorage.getItem('tmss_tenants');
+    if (savedTenants) setTenants(JSON.parse(savedTenants));
+
+    const savedDraft = localStorage.getItem('tmss_draft_config');
+    if (savedDraft) {
+        setConfig(JSON.parse(savedDraft));
+        const m = localStorage.getItem('tmss_draft_meters');
+        if (m) setMeters(JSON.parse(m));
+        const main = localStorage.getItem('tmss_draft_main_meter');
+        if (main) setMainMeter(JSON.parse(main));
+    }
+
+    if (spreadsheetService.isReady()) {
+      fetchCloudData();
+    }
+  }, [fetchCloudData]);
+
+  // Periodic Polling (Every 30 seconds to catch changes from other devices)
+  useEffect(() => {
+    if (!spreadsheetService.isReady()) return;
+    
+    const interval = setInterval(() => {
+      // Only pull if we aren't currently "syncing" (pushing) or in a loading state
+      if (!isSyncing && !isInitialLoading) {
+        fetchCloudData(true);
+      }
+    }, 30000); 
+
+    return () => clearInterval(interval);
+  }, [fetchCloudData, isSyncing, isInitialLoading]);
+
+  // 2. Push Changes to Cloud (Auto-save)
   useEffect(() => {
     if (isFirstRender.current) {
         isFirstRender.current = false;
         return;
     }
+
+    // Skip pushing if the change was caused by a cloud pull itself
+    if (isInternalChange.current) return;
+    if (isInitialLoading) return;
+
     const now = Date.now();
     localStorage.setItem('tmss_draft_config', JSON.stringify(config));
     localStorage.setItem('tmss_draft_main_meter', JSON.stringify(mainMeter));
     localStorage.setItem('tmss_draft_meters', JSON.stringify(meters));
-    localStorage.setItem('tmss_draft_updatedAt', now.toString());
 
     if (spreadsheetService.isReady()) {
-        setIsSyncing(true);
         const timer = setTimeout(async () => {
+            setIsSyncing(true);
             try {
                 await spreadsheetService.saveDraft({
                     updatedAt: now,
@@ -142,43 +223,24 @@ const AppContent: React.FC = () => {
                     mainMeter,
                     meters
                 });
-                setIsSyncing(false);
+                lastCloudSyncTimestamp.current = now;
             } catch (e) {
+                console.error("Auto-save push failed");
+            } finally {
                 setIsSyncing(false);
             }
-        }, 5000); // 5s debounce for spreadsheet
+        }, 2000); 
         return () => clearTimeout(timer);
     }
-  }, [config, mainMeter, meters]);
+  }, [config, mainMeter, meters, isInitialLoading]);
 
-  useEffect(() => {
-    const loadLocal = () => {
-      const savedHistory = localStorage.getItem('tmss_bill_history');
-      if (savedHistory) setHistory(sortBills(JSON.parse(savedHistory)));
-      const savedTariff = localStorage.getItem('tmss_tariff_config');
-      if (savedTariff) setTariffConfig(JSON.parse(savedTariff));
-      const savedTenants = localStorage.getItem('tmss_tenants');
-      if (savedTenants) setTenants(JSON.parse(savedTenants));
-    };
-    loadLocal();
-  }, []);
-
-  useEffect(() => {
-    const handler = (e: any) => {
-      e.preventDefault();
-      setInstallPrompt(e);
-    };
-    window.addEventListener('beforeinstallprompt', handler);
-    return () => window.removeEventListener('beforeinstallprompt', handler);
-  }, []);
-
-  const handleInstallClick = async () => {
-    if (!installPrompt) return;
-    installPrompt.prompt();
-    const { outcome } = await installPrompt.userChoice;
-    if (outcome === 'accepted') {
-      setInstallPrompt(null);
-    }
+  // Navigation handlers
+  const handleViewChange = (view: AppView) => {
+      setCurrentView(view);
+      if (view !== 'report' && view !== 'input') {
+        setViewedBill(null);
+      }
+      window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleConfigChange = (key: keyof BillConfig, value: string | number | boolean) => {
@@ -198,7 +260,12 @@ const AppContent: React.FC = () => {
       }
       localStorage.setItem('tmss_tariff_config', JSON.stringify(newConfig));
       if (spreadsheetService.isReady()) {
-         await spreadsheetService.saveTariff(newConfig);
+         setIsSyncing(true);
+         try {
+            await spreadsheetService.saveTariff(newConfig);
+         } finally {
+            setIsSyncing(false);
+         }
       }
   };
 
@@ -206,7 +273,12 @@ const AppContent: React.FC = () => {
       setTenants(newTenants);
       localStorage.setItem('tmss_tenants', JSON.stringify(newTenants));
       if (spreadsheetService.isReady()) {
-         await spreadsheetService.saveTenants(newTenants);
+         setIsSyncing(true);
+         try {
+            await spreadsheetService.saveTenants(newTenants);
+         } finally {
+            setIsSyncing(false);
+         }
       }
   };
 
@@ -234,25 +306,17 @@ const AppContent: React.FC = () => {
     localStorage.setItem('tmss_bill_history', JSON.stringify(updatedHistory));
     
     if (spreadsheetService.isReady()) {
-       await spreadsheetService.saveBill(newRecord);
+       setIsSyncing(true);
+       try {
+         await spreadsheetService.saveBill(newRecord);
+       } finally {
+         setIsSyncing(false);
+       }
     }
-    // Notification removed to allow quiet save from configuration button
   };
 
   const loadFromHistory = (record: SavedBill) => {
     if (window.confirm(t('confirm_load').replace('{month}', record.config.month))) {
-      applyBillRecord(record);
-      setCurrentView('home');
-      setViewedBill(null);
-    }
-  };
-
-  const handleViewHistory = (record: SavedBill) => {
-    setViewedBill(record);
-    setCurrentView('report');
-  };
-
-  const applyBillRecord = (record: SavedBill) => {
       const cleanConfig: BillConfig = {
         month: record.config.month,
         dateGenerated: record.config.dateGenerated,
@@ -264,6 +328,14 @@ const AppContent: React.FC = () => {
       setConfig(cleanConfig);
       setMainMeter(record.mainMeter);
       setMeters(record.meters);
+      setCurrentView('home');
+      setViewedBill(null);
+    }
+  };
+
+  const handleViewHistory = (record: SavedBill) => {
+    setViewedBill(record);
+    setCurrentView('report');
   };
 
   const deleteFromHistory = async (id: string) => {
@@ -271,11 +343,13 @@ const AppContent: React.FC = () => {
       const updatedHistory = history.filter(h => h.id !== id);
       setHistory(updatedHistory);
       localStorage.setItem('tmss_bill_history', JSON.stringify(updatedHistory));
+      // Note: Delete from GAS not implemented in service but UI updates locally
     }
   };
 
   const onCloudConnected = () => {
     setIsMenuOpen(false);
+    fetchCloudData(); 
   };
 
   const activeConfig = viewedBill ? viewedBill.config : config;
@@ -296,6 +370,8 @@ const AppContent: React.FC = () => {
   }, [activeMeters]);
 
   const renderView = () => {
+    if (isInitialLoading) return <SkeletonLoader />;
+
     switch(currentView) {
       case 'home':
         return <Dashboard config={config} result={calculationResult} mainMeter={mainMeter} />;
@@ -391,9 +467,10 @@ const AppContent: React.FC = () => {
   const isCloudReady = spreadsheetService.isReady();
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 pb-28 transition-colors duration-200">
-      <header className="bg-emerald-700 dark:bg-slate-950 sticky top-0 z-30 no-print px-4 pt-safe flex items-end justify-between border-b border-emerald-800 dark:border-slate-800 transition-colors duration-200 shadow-md min-h-[4rem]">
-        <div className="flex items-center gap-3 w-full justify-between pb-3">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 pb-28">
+      {/* Immersive Header with deep top padding for status bar clearance */}
+      <header className="bg-emerald-700 dark:bg-slate-950 sticky top-0 z-30 no-print px-4 pt-safe flex items-center justify-between border-b border-emerald-800 dark:border-slate-800 shadow-md min-h-[5.5rem]">
+        <div className="flex items-center gap-3 w-full justify-between mt-2 sm:mt-0">
           <div className="flex items-center gap-3">
               <div className="bg-white/20 p-2.5 rounded-2xl">
                 <Lightbulb className="w-5 h-5 text-white" />
@@ -418,11 +495,14 @@ const AppContent: React.FC = () => {
           </div>
             
           <div className="flex items-center gap-1">
-            {installPrompt && (
-              <button onClick={handleInstallClick} className="p-3 text-white/70 hover:bg-white/10 rounded-2xl transition-colors">
-                <Download className="w-5 h-5" />
-              </button>
-            )}
+            <button 
+              onClick={() => fetchCloudData()} 
+              disabled={isSyncing || !isCloudReady}
+              className={`p-3 text-white/70 hover:bg-white/10 rounded-2xl transition-colors ${!isCloudReady ? 'opacity-30 cursor-not-allowed' : ''}`}
+              title="Sync with Cloud"
+            >
+              <RefreshCw className={`w-5 h-5 ${isSyncing ? 'animate-spin' : ''}`} />
+            </button>
 
             <div className="relative">
               <button 
@@ -449,7 +529,7 @@ const AppContent: React.FC = () => {
                     <div className="mx-4 my-2 border-t border-slate-100 dark:border-slate-800"></div>
                     
                     <button onClick={() => { handleViewChange('tenants'); setIsMenuOpen(false); }} className="w-full text-left px-5 py-3 text-sm font-bold text-slate-700 dark:text-slate-200 hover:bg-emerald-50 dark:hover:bg-slate-800 flex items-center gap-3 transition-colors">
-                      <Users className="w-5 h-5 text-sage-500" /> {t('tenants')}
+                      <Users className="w-5 h-5 text-emerald-500" /> {t('tenants')}
                     </button>
                     <button onClick={() => { handleViewChange('tariff'); setIsMenuOpen(false); }} className="w-full text-left px-5 py-3 text-sm font-bold text-slate-700 dark:text-slate-200 hover:bg-emerald-50 dark:hover:bg-slate-800 flex items-center gap-3 transition-colors">
                       <Settings className="w-5 h-5 text-slate-500" /> {t('settings')}

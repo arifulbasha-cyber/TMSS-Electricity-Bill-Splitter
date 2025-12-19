@@ -4,7 +4,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-    <meta name="theme-color" content="#ffffff" />
+    <meta name="theme-color" content="#047857" />
     <title>TMSS Bill Splitter</title>
     <link rel="manifest" href="/manifest.json" />
     <link apple-touch-icon href="https://cdn-icons-png.flaticon.com/512/2933/2933886.png" />
@@ -45,6 +45,8 @@
       @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
       body {
         font-family: 'Inter', sans-serif;
+        /* Prevent elastic scroll white gaps on mobile */
+        overscroll-behavior-y: none;
       }
       
       /* Safe Area Utilities */
@@ -60,9 +62,16 @@
           display: none !important;
         }
       }
+      
+      /* Smooth transitions for dark mode */
+      * {
+        transition-property: background-color, border-color, color, fill, stroke;
+        transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+        transition-duration: 200ms;
+      }
     </style>
   </head>
-  <body class="bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-100 antialiased transition-colors duration-200">
+  <body class="bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-100 antialiased">
     <div id="root"></div>
     <script type="module" src="/index.tsx"></script>
   </body>
