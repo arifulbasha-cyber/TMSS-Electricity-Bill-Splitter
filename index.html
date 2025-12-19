@@ -2,10 +2,11 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no" />
     <meta name="theme-color" content="#047857" />
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="mobile-web-app-capable" content="yes">
     <title>TMSS Bill Splitter</title>
     <link rel="manifest" href="/manifest.json" />
     <link apple-touch-icon href="https://cdn-icons-png.flaticon.com/512/2933/2933886.png" />
@@ -53,20 +54,38 @@
         height: 100%;
         margin: 0;
         padding: 0;
-        overflow-x: hidden;
+        overflow: hidden;
+        background-color: var(--emerald-700); /* Matches status bar */
       }
 
       body {
         font-family: 'Inter', sans-serif;
         overscroll-behavior-y: none;
+        display: flex;
+        flex-direction: column;
       }
       
+      #root {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        overflow-y: auto;
+        background-color: #f8fafc; /* light bg fallback */
+      }
+      
+      .dark #root {
+        background-color: #020617; /* dark bg fallback */
+      }
+
       /* Safe Area Utilities */
       .pt-safe {
         padding-top: env(safe-area-inset-top);
       }
       .pb-safe {
         padding-bottom: env(safe-area-inset-bottom);
+      }
+      .mb-safe {
+        margin-bottom: env(safe-area-inset-bottom);
       }
 
       @media print {
@@ -80,6 +99,11 @@
         transition-property: background-color, border-color, color, fill, stroke;
         transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
         transition-duration: 200ms;
+      }
+
+      /* Scrollbar concealment for cleaner mobile look */
+      ::-webkit-scrollbar {
+        display: none;
       }
     </style>
   </head>

@@ -107,7 +107,6 @@ const AppContent: React.FC = () => {
   const isFirstRender = useRef(true);
   const isInternalChange = useRef(false);
 
-  // 1. Pull Data from Cloud (Central Database)
   const fetchCloudData = useCallback(async (isSilent = false) => {
     if (!spreadsheetService.isReady()) return;
     
@@ -456,10 +455,10 @@ const AppContent: React.FC = () => {
   const isCloudReady = spreadsheetService.isReady();
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 pb-28">
-      {/* Immersive Full-Screen Header with generous top padding for Android Status Bar clearance */}
-      <header className="bg-emerald-700 dark:bg-slate-950 sticky top-0 z-30 no-print px-4 pt-10 sm:pt-6 pt-safe flex items-end justify-between border-b border-emerald-800 dark:border-slate-800 shadow-md min-h-[6.5rem]">
-        <div className="flex items-center gap-3 w-full justify-between pb-3">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 pb-safe">
+      {/* Immersive Edge-to-Edge Header */}
+      <header className="bg-emerald-700 dark:bg-slate-900 sticky top-0 z-30 no-print pt-safe border-b border-emerald-800 dark:border-slate-800 shadow-md">
+        <div className="px-4 h-20 flex items-center justify-between">
           <div className="flex items-center gap-3">
               <div className="bg-white/20 p-2.5 rounded-2xl">
                 <Lightbulb className="w-5 h-5 text-white" />
@@ -550,7 +549,7 @@ const AppContent: React.FC = () => {
         </div>
       </header>
 
-      <main className="max-w-3xl mx-auto px-4 py-4 print:p-0">
+      <main className="max-w-3xl mx-auto px-4 py-4 print:p-0 pb-32">
         {renderView()}
       </main>
 
@@ -559,7 +558,7 @@ const AppContent: React.FC = () => {
       {currentView === 'home' && (
         <button 
           onClick={() => handleViewChange('input')}
-          className="fixed bottom-24 right-6 w-14 h-14 bg-emerald-600 text-white rounded-2xl shadow-2xl flex items-center justify-center z-40 transition-all hover:scale-105 active:scale-90"
+          className="fixed bottom-28 right-6 w-14 h-14 bg-emerald-600 text-white rounded-2xl shadow-2xl flex items-center justify-center z-40 transition-all hover:scale-105 active:scale-90 mb-safe"
           title={t('input')}
         >
           <Plus className="w-8 h-8" />
