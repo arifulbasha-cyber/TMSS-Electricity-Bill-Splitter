@@ -1,19 +1,20 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { BillConfig, TariffConfig } from '../types';
-import { Settings, CreditCard, Banknote, Calendar, Clock, CheckCircle2, Circle, Lock } from 'lucide-react';
+import { Settings, CreditCard, Banknote, Calendar, Clock, CheckCircle2, Circle, Lock, Save } from 'lucide-react';
 import { useLanguage } from '../i18n';
 
 interface BillConfigurationProps {
   config: BillConfig;
   onChange: (key: keyof BillConfig, value: string | number | boolean) => void;
   tariffConfig: TariffConfig;
-  onViewReport?: () => void;
+  onSaveHistory: () => void;
   readOnly?: boolean;
 }
 
-const BillConfiguration: React.FC<BillConfigurationProps> = ({ config, onChange, tariffConfig, onViewReport, readOnly = false }) => {
+const BillConfiguration: React.FC<BillConfigurationProps> = ({ config, onChange, tariffConfig, onSaveHistory, readOnly = false }) => {
   const { t, translateMonth } = useLanguage();
+  const [isSaved, setIsSaved] = useState(false);
 
   const handleChange = (key: keyof BillConfig) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     if (readOnly) return;
@@ -24,6 +25,12 @@ const BillConfiguration: React.FC<BillConfigurationProps> = ({ config, onChange,
   const handleFocus = (e: React.FocusEvent<HTMLInputElement>) => {
     if (readOnly) return;
     e.target.select();
+  };
+
+  const handleInternalSave = () => {
+    onSaveHistory();
+    setIsSaved(true);
+    setTimeout(() => setIsSaved(false), 3000);
   };
 
   const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
@@ -41,7 +48,21 @@ const BillConfiguration: React.FC<BillConfigurationProps> = ({ config, onChange,
           </div>
           <h2 className="text-xl font-black text-slate-800 dark:text-slate-100 tracking-tight">{t('costs_configuration')}</h2>
         </div>
-        {readOnly && <span className="text-[10px] font-black text-amber-600 uppercase tracking-widest">{t('local')} VIEW ONLY</span>}
+        {readOnly ? (
+           <span className="text-[10px] font-black text-amber-600 uppercase tracking-widest">{t('local')} VIEW ONLY</span>
+        ) : (
+           <button 
+             onClick={handleInternalSave}
+             className={`flex items-center gap-2 text-[10px] font-black uppercase px-4 py-2 rounded-xl transition-all active:scale-95 shadow-sm ${
+               isSaved 
+                 ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-400' 
+                 : 'bg-emerald-600 text-white hover:bg-emerald-700'
+             }`}
+           >
+              {isSaved ? <CheckCircle2 className="w-4 h-4" /> : <Save className="w-4 h-4" />}
+              {isSaved ? 'Saved' : t('save_history')}
+           </button>
+        )}
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">

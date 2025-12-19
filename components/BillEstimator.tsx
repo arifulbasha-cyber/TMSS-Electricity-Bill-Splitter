@@ -359,16 +359,6 @@ const BillEstimator: React.FC<BillEstimatorProps> = ({ tariffConfig }) => {
             </div>
           </div>
 
-          <div className="bg-emerald-50/50 dark:bg-slate-800/50 p-4 rounded-lg border border-emerald-100 dark:border-slate-700 text-sm text-slate-600 dark:text-slate-300 space-y-2">
-            <p className="font-medium text-slate-800 dark:text-slate-200 uppercase tracking-wide text-xs">{t('est_unit_uses')}</p>
-            <p className="text-sm">
-              {t('reverse_intro_1')}
-            </p>
-            <p className="text-sm">
-              {t('reverse_intro_2')}
-            </p>
-          </div>
-
           {(typeof targetBill === 'number' && targetBill > 0) ? (
             <>
                <div className="overflow-x-auto rounded-lg border border-slate-200 dark:border-slate-700">

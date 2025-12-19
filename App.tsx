@@ -236,7 +236,7 @@ const AppContent: React.FC = () => {
     if (spreadsheetService.isReady()) {
        await spreadsheetService.saveBill(newRecord);
     }
-    alert(t('saved_success'));
+    // Notification removed to allow quiet save from configuration button
   };
 
   const loadFromHistory = (record: SavedBill) => {
@@ -249,7 +249,6 @@ const AppContent: React.FC = () => {
 
   const handleViewHistory = (record: SavedBill) => {
     setViewedBill(record);
-    // Changed from 'input' to 'report' to show finalized view as requested
     setCurrentView('report');
   };
 
@@ -307,6 +306,7 @@ const AppContent: React.FC = () => {
                 config={activeConfig} 
                 onChange={handleConfigChange} 
                 tariffConfig={tariffConfig} 
+                onSaveHistory={saveToHistory}
                 readOnly={!!viewedBill}
             />
             <MeterReadings 
