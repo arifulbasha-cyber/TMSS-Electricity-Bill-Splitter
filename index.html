@@ -51,23 +51,32 @@
         --slate-900: #0f172a;
       }
 
-      html, body {
+      /* Base styles to allow content to bleed into safe areas */
+      html {
         height: 100%;
         margin: 0;
         padding: 0;
+        background-color: var(--emerald-700); /* Default Light Mode Header Color */
         overflow: hidden;
+      }
+
+      html.dark {
+        background-color: var(--slate-900); /* Default Dark Mode Header Color */
       }
 
       body {
         font-family: 'Inter', sans-serif;
-        overscroll-behavior-y: none;
+        height: 100%;
+        margin: 0;
+        padding: 0;
         display: flex;
         flex-direction: column;
-        background-color: #f8fafc; /* light bg fallback */
+        overscroll-behavior-y: none;
+        background-color: #f8fafc; /* Content area color */
       }
       
       .dark body {
-        background-color: #020617; /* dark bg fallback */
+        background-color: #020617; /* Dark content area color */
       }
       
       #root {
@@ -75,6 +84,7 @@
         display: flex;
         flex-direction: column;
         overflow-y: auto;
+        position: relative;
       }
 
       /* Safe Area Utilities */
@@ -112,7 +122,11 @@
         const isDark = document.documentElement.classList.contains('dark');
         const meta = document.getElementById('theme-meta');
         if (meta) {
-          meta.setAttribute('content', isDark ? '#0f172a' : '#047857');
+          // Set meta theme-color to exactly match header background
+          const color = isDark ? '#0f172a' : '#047857';
+          meta.setAttribute('content', color);
+          // Also set html background to prevent 'white bars' during scrolling or transitions
+          document.documentElement.style.backgroundColor = color;
         }
       }
       const observer = new MutationObserver(updateThemeColor);
