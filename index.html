@@ -92,6 +92,15 @@
       .pt-safe {
         padding-top: env(safe-area-inset-top);
       }
+      
+      /* Mobile specific override to ensure space for status bar icons */
+      @media (max-width: 768px) {
+        .pt-safe {
+          /* Fallback to at least 24px if env() returns 0, otherwise use safe-area-inset-top */
+          padding-top: max(24px, env(safe-area-inset-top));
+        }
+      }
+
       .pb-safe {
         padding-bottom: env(safe-area-inset-bottom);
       }
