@@ -30,7 +30,7 @@ class SpreadsheetService {
   }
 
   private async request(action: string, payload?: any, method: 'GET' | 'POST' = 'POST') {
-    if (!this.config) throw new Error("Spreadsheet not configured");
+    if (!this.config) throw new Error("Cloud sync not configured");
 
     const url = new URL(this.config.webAppUrl);
     if (method === 'GET') {
@@ -43,21 +43,39 @@ class SpreadsheetService {
     const options: RequestInit = {
       method,
       mode: 'cors',
-      redirect: 'follow', // Essential for Apps Script redirects
+      // Apps Script redirects to a temporary URL which requires 'follow'
+      redirect: 'follow', 
     };
 
     if (method === 'POST') {
       options.body = JSON.stringify({ action, payload });
-      // Note: Apps Script sometimes prefers text/plain for CORS preflight simplicity
+      // Using text/plain is a common trick to avoid pre-flight OPTIONS requests 
+      // which Google Apps Script doesn't always handle well.
       options.headers = { 'Content-Type': 'text/plain;charset=utf-8' };
     }
 
     try {
       const response = await fetch(url.toString(), options);
-      if (!response.ok) throw new Error("Spreadsheet request failed");
-      return response.json();
+      
+      // If the response is not JSON (e.g. an HTML error page from Google)
+      // we need to see the raw text to debug.
+      const responseText = await response.text();
+      
+      let data;
+      try {
+        data = JSON.parse(responseText);
+      } catch (parseError) {
+        console.error("Non-JSON response from Apps Script:", responseText);
+        throw new Error("Cloud service returned an invalid response. Check console for details.");
+      }
+
+      if (data && data.status === 'error') {
+        throw new Error(data.message || "Cloud sync error");
+      }
+
+      return data;
     } catch (err) {
-      console.error("Spreadsheet Service Error:", err);
+      console.error("Spreadsheet Sync Failed:", err);
       throw err;
     }
   }
@@ -72,12 +90,10 @@ class SpreadsheetService {
       if (!Array.isArray(rows) || rows.length <= 1) return [];
       
       // rows[0] is headers ['Timestamp', 'ID', 'Data']
-      // We want column index 2 (Data)
       return rows.slice(1).map((r: any[]) => {
         try {
           return JSON.parse(r[2]);
         } catch (e) {
-          console.warn("Malformed bill row skipped", r);
           return null;
         }
       }).filter(b => b !== null) as SavedBill[];
