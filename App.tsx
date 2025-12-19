@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import { BillConfig, MeterReading, BillCalculationResult, UserCalculation, SavedBill, TariffConfig, Tenant } from './types';
 import { INITIAL_CONFIG, INITIAL_METERS, INITIAL_MAIN_METER, DEFAULT_TARIFF_CONFIG } from './constants';
@@ -15,7 +14,7 @@ import TrendsDashboard from './components/TrendsDashboard';
 import CloudSetupModal from './components/CloudSetupModal';
 import MobileNav from './components/MobileNav';
 import SkeletonLoader from './components/SkeletonLoader';
-import { Lightbulb, Database, Download, Settings, Users, Cloud, Moon, Sun, Menu, ArrowRight, PieChart, BarChart3, RefreshCw, Plus, ArrowLeft, FileSpreadsheet } from 'lucide-react';
+import { Lightbulb, Database, Settings, Users, Cloud, Moon, Sun, Menu, ArrowRight, PieChart, BarChart3, RefreshCw, Plus, ArrowLeft, FileSpreadsheet } from 'lucide-react';
 import { LanguageProvider, useLanguage } from './i18n';
 import { ThemeProvider, useTheme } from './components/ThemeContext';
 import { spreadsheetService } from './services/spreadsheet';
@@ -123,9 +122,8 @@ const AppContent: React.FC = () => {
         spreadsheetService.getTenants()
       ]);
 
-      // Only update local state if cloud data is newer or if it's the first pull
       if (cloudDraft && cloudDraft.updatedAt > lastCloudSyncTimestamp.current) {
-        isInternalChange.current = true; // Prevent the update from triggering a push back
+        isInternalChange.current = true; 
         setConfig(cloudDraft.config);
         setMainMeter(cloudDraft.mainMeter);
         setMeters(cloudDraft.meters);
@@ -153,12 +151,10 @@ const AppContent: React.FC = () => {
     } finally {
       setIsInitialLoading(false);
       setIsSyncing(false);
-      // Reset the internal change flag after state has had time to update
       setTimeout(() => { isInternalChange.current = false; }, 100);
     }
   }, []);
 
-  // Initial Load from Cloud or Local
   useEffect(() => {
     const savedHistory = localStorage.getItem('tmss_bill_history');
     if (savedHistory) setHistory(sortBills(JSON.parse(savedHistory)));
@@ -183,12 +179,10 @@ const AppContent: React.FC = () => {
     }
   }, [fetchCloudData]);
 
-  // Periodic Polling (Every 30 seconds to catch changes from other devices)
   useEffect(() => {
     if (!spreadsheetService.isReady()) return;
     
     const interval = setInterval(() => {
-      // Only pull if we aren't currently "syncing" (pushing) or in a loading state
       if (!isSyncing && !isInitialLoading) {
         fetchCloudData(true);
       }
@@ -197,14 +191,11 @@ const AppContent: React.FC = () => {
     return () => clearInterval(interval);
   }, [fetchCloudData, isSyncing, isInitialLoading]);
 
-  // 2. Push Changes to Cloud (Auto-save)
   useEffect(() => {
     if (isFirstRender.current) {
         isFirstRender.current = false;
         return;
     }
-
-    // Skip pushing if the change was caused by a cloud pull itself
     if (isInternalChange.current) return;
     if (isInitialLoading) return;
 
@@ -234,7 +225,6 @@ const AppContent: React.FC = () => {
     }
   }, [config, mainMeter, meters, isInitialLoading]);
 
-  // Navigation handlers
   const handleViewChange = (view: AppView) => {
       setCurrentView(view);
       if (view !== 'report' && view !== 'input') {
@@ -343,7 +333,6 @@ const AppContent: React.FC = () => {
       const updatedHistory = history.filter(h => h.id !== id);
       setHistory(updatedHistory);
       localStorage.setItem('tmss_bill_history', JSON.stringify(updatedHistory));
-      // Note: Delete from GAS not implemented in service but UI updates locally
     }
   };
 
@@ -468,9 +457,9 @@ const AppContent: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 pb-28">
-      {/* Immersive Header with deep top padding for status bar clearance */}
-      <header className="bg-emerald-700 dark:bg-slate-950 sticky top-0 z-30 no-print px-4 pt-safe flex items-center justify-between border-b border-emerald-800 dark:border-slate-800 shadow-md min-h-[5.5rem]">
-        <div className="flex items-center gap-3 w-full justify-between mt-2 sm:mt-0">
+      {/* Immersive Full-Screen Header with generous top padding for Android Status Bar clearance */}
+      <header className="bg-emerald-700 dark:bg-slate-950 sticky top-0 z-30 no-print px-4 pt-10 sm:pt-6 pt-safe flex items-end justify-between border-b border-emerald-800 dark:border-slate-800 shadow-md min-h-[6.5rem]">
+        <div className="flex items-center gap-3 w-full justify-between pb-3">
           <div className="flex items-center gap-3">
               <div className="bg-white/20 p-2.5 rounded-2xl">
                 <Lightbulb className="w-5 h-5 text-white" />
