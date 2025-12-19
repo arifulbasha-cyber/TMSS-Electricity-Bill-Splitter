@@ -18,6 +18,7 @@ import { Lightbulb, Database, Settings, Users, Cloud, Moon, Sun, Menu, ArrowRigh
 import { LanguageProvider, useLanguage } from './i18n';
 import { ThemeProvider, useTheme } from './components/ThemeContext';
 import { spreadsheetService } from './services/spreadsheet';
+import { StatusBar, Style } from '@capacitor/status-bar';
 
 const sortBills = (bills: SavedBill[]) => {
   return [...bills].sort((a, b) => {
@@ -106,6 +107,24 @@ const AppContent: React.FC = () => {
   const lastCloudSyncTimestamp = useRef<number>(0);
   const isFirstRender = useRef(true);
   const isInternalChange = useRef(false);
+
+  // Status Bar Immersive Setup for Android
+  useEffect(() => {
+    const handleStatusBar = async () => {
+      try {
+        // This command makes the webview occupy the full screen including the status bar area
+        await StatusBar.setOverlaysWebView({ overlay: true });
+        
+        // Our headers (Emerald-700 and Slate-900) are dark, so we want light icons
+        // Using Style.Light ensures white icons/text in the status bar
+        await StatusBar.setStyle({ style: Style.Light });
+      } catch (e) {
+        // Fallback for non-native platforms
+        console.debug('StatusBar plugin not available or platform not supported.');
+      }
+    };
+    handleStatusBar();
+  }, []);
 
   const fetchCloudData = useCallback(async (isSilent = false) => {
     if (!spreadsheetService.isReady()) return;

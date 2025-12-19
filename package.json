@@ -1,4 +1,3 @@
-
 {
   "name": "com.electricity.bill.manager",
   "private": true,
@@ -15,6 +14,7 @@
     "@capacitor/android": "^6.0.0",
     "@capacitor/cli": "^6.0.0",
     "@capacitor/core": "^6.0.0",
+    "@capacitor/status-bar": "^6.0.0",
     "html2canvas": "^1.4.1",
     "lucide-react": "^0.263.1",
     "react": "^18.2.0",

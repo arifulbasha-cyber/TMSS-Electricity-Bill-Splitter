@@ -1,4 +1,3 @@
-
 {
   "appId": "com.electricity.bill.manager",
   "appName": "TMSS Bill Splitter",
@@ -9,5 +8,11 @@
   "android": {
     "allowMixedContent": true,
     "captureInput": true
+  },
+  "plugins": {
+    "StatusBar": {
+      "style": "LIGHT",
+      "overlaysWebView": true
+    }
   }
 }
