@@ -38,6 +38,8 @@ const calculateBillBreakdown = (
     const DEMAND_CHARGE = tariffConfig.demandCharge;
     const METER_RENT = tariffConfig.meterRent;
 
+    // VAT Fixed = (Demand Charge + Meter Rent) * 5%
+    // VAT Distributed = VAT - VAT Fixed
     const vatTotal = (config.totalBillPayable * VAT_RATE) / (1 + VAT_RATE);
     const vatFixed = (DEMAND_CHARGE + METER_RENT) * VAT_RATE;
     const vatDistributed = Math.max(0, vatTotal - vatFixed);
@@ -49,6 +51,7 @@ const calculateBillBreakdown = (
       totalUnits += units > 0 ? units : 0;
     });
 
+    // Rate Calculation: (Total Bill - Demand Charge - Meter Rent - VAT Fixed) / Total Units
     const variableCostPool = config.totalBillPayable - DEMAND_CHARGE - METER_RENT - vatFixed;
     const calculatedRate = totalUnits > 0 ? variableCostPool / totalUnits : 0;
     const numUsers = meters.length;
@@ -121,10 +124,10 @@ const AppContent: React.FC = () => {
     handleStatusBar();
   }, []);
 
-  const fetchCloudData = useCallback(async (isSilent = false) => {
+  const fetchCloudData = useCallback(async () => {
     if (!spreadsheetService.isReady()) return;
     
-    if (!isSilent) setIsInitialLoading(true);
+    setIsInitialLoading(true);
     setIsSyncing(true);
     
     try {
@@ -135,8 +138,8 @@ const AppContent: React.FC = () => {
         spreadsheetService.getTenants()
       ]);
 
-      // Always overwrite if it's a manual pull (!isSilent)
-      if (cloudDraft && (!isSilent || cloudDraft.updatedAt > lastCloudSyncTimestamp.current)) {
+      // MANUAL PULL ALWAYS OVERWRITES EVERYTHING
+      if (cloudDraft) {
         isInternalChange.current = true; 
         setConfig(cloudDraft.config);
         setMainMeter(cloudDraft.mainMeter);
@@ -148,7 +151,7 @@ const AppContent: React.FC = () => {
         localStorage.setItem('tmss_draft_meters', JSON.stringify(cloudDraft.meters));
       }
       
-      if (cloudHistory && cloudHistory.length > 0) {
+      if (cloudHistory) {
         setHistory(sortBills(cloudHistory));
         localStorage.setItem('tmss_bill_history', JSON.stringify(cloudHistory));
       }
@@ -163,15 +166,15 @@ const AppContent: React.FC = () => {
         localStorage.setItem('tmss_tenants', JSON.stringify(cloudTenants));
       }
 
-      if (!isSilent) alert("Cloud data pulled successfully.");
-      console.log("Cloud pull complete.");
+      alert("Cloud data successfully pulled. Local state has been overwritten.");
     } catch (error) {
       console.error("Cloud pull failed:", error);
-      if (!isSilent) alert("Failed to pull from cloud.");
+      alert("Failed to pull data from cloud. Please check your connection.");
     } finally {
       setIsInitialLoading(false);
       setIsSyncing(false);
-      setTimeout(() => { isInternalChange.current = false; }, 500);
+      // Briefly prevent auto-push from triggering immediately after pull
+      setTimeout(() => { isInternalChange.current = false; }, 1000);
     }
   }, []);
 
@@ -191,15 +194,16 @@ const AppContent: React.FC = () => {
         spreadsheetService.saveTenants(tenants)
       ]);
       lastCloudSyncTimestamp.current = now;
-      alert("Pushed local data to cloud!");
+      alert("Local data successfully pushed to cloud!");
     } catch (error) {
       console.error("Cloud push failed:", error);
-      alert("Failed to push to cloud.");
+      alert("Failed to push data to cloud.");
     } finally {
       setIsSyncing(false);
     }
   }, [config, mainMeter, meters, tariffConfig, tenants]);
 
+  // Initial Local Load - No Auto Pull
   useEffect(() => {
     const savedHistory = localStorage.getItem('tmss_bill_history');
     if (savedHistory) setHistory(sortBills(JSON.parse(savedHistory)));
@@ -218,10 +222,9 @@ const AppContent: React.FC = () => {
         const main = localStorage.getItem('tmss_draft_main_meter');
         if (main) setMainMeter(JSON.parse(main));
     }
-    // No auto-pull on startup.
   }, []);
 
-  // Auto-push Logic (Draft only)
+  // AUTO PUSH LOGIC - "as i type save changes to cloud"
   useEffect(() => {
     if (isFirstRender.current) {
         isFirstRender.current = false;
@@ -230,22 +233,22 @@ const AppContent: React.FC = () => {
     if (isInternalChange.current) return;
     if (isInitialLoading) return;
 
-    const now = Date.now();
+    // Save to LocalStorage immediately
     localStorage.setItem('tmss_draft_config', JSON.stringify(config));
     localStorage.setItem('tmss_draft_main_meter', JSON.stringify(mainMeter));
     localStorage.setItem('tmss_draft_meters', JSON.stringify(meters));
 
+    // Auto-push to cloud draft after 2 seconds of inactivity
     if (spreadsheetService.isReady()) {
         const timer = setTimeout(async () => {
             setIsSyncing(true);
             try {
                 await spreadsheetService.saveDraft({
-                    updatedAt: now,
+                    updatedAt: Date.now(),
                     config,
                     mainMeter,
                     meters
                 });
-                lastCloudSyncTimestamp.current = now;
             } catch (e) {
                 console.error("Auto-save push failed");
             } finally {
@@ -369,7 +372,8 @@ const AppContent: React.FC = () => {
 
   const onCloudConnected = () => {
     setIsMenuOpen(false);
-    fetchCloudData(); 
+    // User just connected, they might want to pull, but we won't auto-pull.
+    // We let them decide.
   };
 
   const activeConfig = viewedBill ? viewedBill.config : config;
@@ -514,15 +518,6 @@ const AppContent: React.FC = () => {
           </div>
             
           <div className="flex items-center gap-1">
-            <button 
-              onClick={() => fetchCloudData()} 
-              disabled={isSyncing || !isCloudReady}
-              className={`p-3 text-white/70 hover:bg-white/10 rounded-2xl transition-colors ${!isCloudReady ? 'opacity-30 cursor-not-allowed' : ''}`}
-              title="Pull Cloud Data"
-            >
-              <DownloadCloud className={`w-5 h-5 ${isSyncing ? 'animate-spin' : ''}`} />
-            </button>
-
             <div className="relative">
               <button 
                 onClick={() => setIsMenuOpen(!isMenuOpen)}
@@ -536,22 +531,19 @@ const AppContent: React.FC = () => {
                   <div className="fixed inset-0 z-40 bg-transparent" onClick={() => setIsMenuOpen(false)}></div>
                   <div className="absolute right-0 top-full mt-3 w-64 bg-white dark:bg-slate-900 rounded-[2rem] shadow-2xl border border-slate-200 dark:border-slate-800 py-3 z-50 animate-in fade-in slide-in-from-top-2 overflow-hidden">
                     
-                    {/* MANUAL PUSH & PULL BUTTONS IN MENU */}
+                    {/* MANUAL PUSH & PULL BUTTONS INSIDE MENU */}
                     {isCloudReady ? (
-                      <div className="px-2 pb-2">
-                        <div className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest px-3 mb-2 pt-1">Cloud Sync</div>
-                        <button onClick={() => { fetchCloudData(); setIsMenuOpen(false); }} className="w-full text-left px-3 py-2.5 text-sm font-bold text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 rounded-xl flex items-center gap-3 transition-colors">
-                          <DownloadCloud className="w-5 h-5" /> Pull from Cloud
-                        </button>
-                        <button onClick={() => { pushCloudData(); setIsMenuOpen(false); }} className="w-full text-left px-3 py-2.5 text-sm font-bold text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 rounded-xl flex items-center gap-3 transition-colors">
+                      <div className="bg-slate-50/50 dark:bg-slate-900/50 px-2 pt-2 pb-1">
+                        <button onClick={() => { pushCloudData(); setIsMenuOpen(false); }} className="w-full text-left px-4 py-3 text-sm font-black text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-slate-800 flex items-center gap-3 transition-colors rounded-xl">
                           <UploadCloud className="w-5 h-5" /> Push to Cloud
                         </button>
-                        <div className="mx-3 my-2 border-t border-slate-100 dark:border-slate-800"></div>
+                        <button onClick={() => { fetchCloudData(); setIsMenuOpen(false); }} className="w-full text-left px-4 py-3 text-sm font-black text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-slate-800 flex items-center gap-3 transition-colors rounded-xl">
+                          <DownloadCloud className="w-5 h-5" /> Pull from Cloud
+                        </button>
+                        <div className="mx-4 my-2 border-t border-slate-200 dark:border-slate-800"></div>
                       </div>
                     ) : (
-                      <div className="px-5 py-3 text-[10px] font-black text-rose-500 uppercase tracking-widest bg-rose-50 dark:bg-rose-900/10 mb-2">
-                        Cloud Disconnected
-                      </div>
+                      <div className="px-5 py-3 text-[9px] font-black text-slate-400 uppercase tracking-widest">Cloud Disconnected</div>
                     )}
 
                     <button onClick={() => { handleViewChange('stats'); setIsMenuOpen(false); }} className="w-full text-left px-5 py-3 text-sm font-bold text-slate-700 dark:text-slate-200 hover:bg-emerald-50 dark:hover:bg-slate-800 flex items-center gap-3 transition-colors">
