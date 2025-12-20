@@ -14,7 +14,7 @@ import TrendsDashboard from './components/TrendsDashboard';
 import CloudSetupModal from './components/CloudSetupModal';
 import MobileNav from './components/MobileNav';
 import SkeletonLoader from './components/SkeletonLoader';
-import { Lightbulb, Database, Settings, Users, Cloud, Moon, Sun, Menu, ArrowRight, PieChart, BarChart3, RefreshCw, Plus, ArrowLeft, FileSpreadsheet } from 'lucide-react';
+import { Lightbulb, Database, Settings, Users, Cloud, Moon, Sun, Menu, ArrowRight, PieChart, BarChart3, RefreshCw, Plus, ArrowLeft, FileSpreadsheet, DownloadCloud, UploadCloud } from 'lucide-react';
 import { LanguageProvider, useLanguage } from './i18n';
 import { ThemeProvider, useTheme } from './components/ThemeContext';
 import { spreadsheetService } from './services/spreadsheet';
@@ -112,14 +112,9 @@ const AppContent: React.FC = () => {
   useEffect(() => {
     const handleStatusBar = async () => {
       try {
-        // This command makes the webview occupy the full screen including the status bar area
         await StatusBar.setOverlaysWebView({ overlay: true });
-        
-        // Our headers (Emerald-700 and Slate-900) are dark, so we want light icons
-        // Using Style.Light ensures white icons/text in the status bar
         await StatusBar.setStyle({ style: Style.Light });
       } catch (e) {
-        // Fallback for non-native platforms
         console.debug('StatusBar plugin not available or platform not supported.');
       }
     };
@@ -140,12 +135,17 @@ const AppContent: React.FC = () => {
         spreadsheetService.getTenants()
       ]);
 
-      if (cloudDraft && cloudDraft.updatedAt > lastCloudSyncTimestamp.current) {
+      // Always overwrite if it's a manual pull (!isSilent)
+      if (cloudDraft && (!isSilent || cloudDraft.updatedAt > lastCloudSyncTimestamp.current)) {
         isInternalChange.current = true; 
         setConfig(cloudDraft.config);
         setMainMeter(cloudDraft.mainMeter);
         setMeters(cloudDraft.meters);
         lastCloudSyncTimestamp.current = cloudDraft.updatedAt;
+        
+        localStorage.setItem('tmss_draft_config', JSON.stringify(cloudDraft.config));
+        localStorage.setItem('tmss_draft_main_meter', JSON.stringify(cloudDraft.mainMeter));
+        localStorage.setItem('tmss_draft_meters', JSON.stringify(cloudDraft.meters));
       }
       
       if (cloudHistory && cloudHistory.length > 0) {
@@ -163,15 +163,42 @@ const AppContent: React.FC = () => {
         localStorage.setItem('tmss_tenants', JSON.stringify(cloudTenants));
       }
 
-      console.log("Cloud sync complete.");
+      if (!isSilent) alert("Cloud data pulled successfully.");
+      console.log("Cloud pull complete.");
     } catch (error) {
       console.error("Cloud pull failed:", error);
+      if (!isSilent) alert("Failed to pull from cloud.");
     } finally {
       setIsInitialLoading(false);
       setIsSyncing(false);
-      setTimeout(() => { isInternalChange.current = false; }, 100);
+      setTimeout(() => { isInternalChange.current = false; }, 500);
     }
   }, []);
+
+  const pushCloudData = useCallback(async () => {
+    if (!spreadsheetService.isReady()) return;
+    setIsSyncing(true);
+    try {
+      const now = Date.now();
+      await Promise.all([
+        spreadsheetService.saveDraft({
+            updatedAt: now,
+            config,
+            mainMeter,
+            meters
+        }),
+        spreadsheetService.saveTariff(tariffConfig),
+        spreadsheetService.saveTenants(tenants)
+      ]);
+      lastCloudSyncTimestamp.current = now;
+      alert("Pushed local data to cloud!");
+    } catch (error) {
+      console.error("Cloud push failed:", error);
+      alert("Failed to push to cloud.");
+    } finally {
+      setIsSyncing(false);
+    }
+  }, [config, mainMeter, meters, tariffConfig, tenants]);
 
   useEffect(() => {
     const savedHistory = localStorage.getItem('tmss_bill_history');
@@ -191,24 +218,10 @@ const AppContent: React.FC = () => {
         const main = localStorage.getItem('tmss_draft_main_meter');
         if (main) setMainMeter(JSON.parse(main));
     }
+    // No auto-pull on startup.
+  }, []);
 
-    if (spreadsheetService.isReady()) {
-      fetchCloudData();
-    }
-  }, [fetchCloudData]);
-
-  useEffect(() => {
-    if (!spreadsheetService.isReady()) return;
-    
-    const interval = setInterval(() => {
-      if (!isSyncing && !isInitialLoading) {
-        fetchCloudData(true);
-      }
-    }, 30000); 
-
-    return () => clearInterval(interval);
-  }, [fetchCloudData, isSyncing, isInitialLoading]);
-
+  // Auto-push Logic (Draft only)
   useEffect(() => {
     if (isFirstRender.current) {
         isFirstRender.current = false;
@@ -475,9 +488,7 @@ const AppContent: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 pb-safe">
-      {/* Immersive Edge-to-Edge Header - Using pt-safe to bleed color into status bar area */}
       <header className="bg-emerald-700 dark:bg-slate-900 sticky top-0 z-30 no-print pt-safe border-b border-emerald-800 dark:border-slate-800 shadow-md">
-        {/* mt-1 on mobile adds a small additional buffer so text/icons sit clearly below system clock/icons */}
         <div className="px-4 h-16 sm:h-20 flex items-center justify-between mt-1 sm:mt-0">
           <div className="flex items-center gap-3">
               <div className="bg-white/20 p-2.5 rounded-2xl">
@@ -507,9 +518,9 @@ const AppContent: React.FC = () => {
               onClick={() => fetchCloudData()} 
               disabled={isSyncing || !isCloudReady}
               className={`p-3 text-white/70 hover:bg-white/10 rounded-2xl transition-colors ${!isCloudReady ? 'opacity-30 cursor-not-allowed' : ''}`}
-              title="Sync with Cloud"
+              title="Pull Cloud Data"
             >
-              <RefreshCw className={`w-5 h-5 ${isSyncing ? 'animate-spin' : ''}`} />
+              <DownloadCloud className={`w-5 h-5 ${isSyncing ? 'animate-spin' : ''}`} />
             </button>
 
             <div className="relative">
@@ -523,7 +534,26 @@ const AppContent: React.FC = () => {
               {isMenuOpen && (
                 <>
                   <div className="fixed inset-0 z-40 bg-transparent" onClick={() => setIsMenuOpen(false)}></div>
-                  <div className="absolute right-0 top-full mt-3 w-64 bg-white dark:bg-slate-900 rounded-[2rem] shadow-2xl border border-slate-200 dark:border-slate-800 py-3 z-50 animate-in fade-in slide-in-from-top-2">
+                  <div className="absolute right-0 top-full mt-3 w-64 bg-white dark:bg-slate-900 rounded-[2rem] shadow-2xl border border-slate-200 dark:border-slate-800 py-3 z-50 animate-in fade-in slide-in-from-top-2 overflow-hidden">
+                    
+                    {/* MANUAL PUSH & PULL BUTTONS IN MENU */}
+                    {isCloudReady ? (
+                      <div className="px-2 pb-2">
+                        <div className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest px-3 mb-2 pt-1">Cloud Sync</div>
+                        <button onClick={() => { fetchCloudData(); setIsMenuOpen(false); }} className="w-full text-left px-3 py-2.5 text-sm font-bold text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 rounded-xl flex items-center gap-3 transition-colors">
+                          <DownloadCloud className="w-5 h-5" /> Pull from Cloud
+                        </button>
+                        <button onClick={() => { pushCloudData(); setIsMenuOpen(false); }} className="w-full text-left px-3 py-2.5 text-sm font-bold text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 rounded-xl flex items-center gap-3 transition-colors">
+                          <UploadCloud className="w-5 h-5" /> Push to Cloud
+                        </button>
+                        <div className="mx-3 my-2 border-t border-slate-100 dark:border-slate-800"></div>
+                      </div>
+                    ) : (
+                      <div className="px-5 py-3 text-[10px] font-black text-rose-500 uppercase tracking-widest bg-rose-50 dark:bg-rose-900/10 mb-2">
+                        Cloud Disconnected
+                      </div>
+                    )}
+
                     <button onClick={() => { handleViewChange('stats'); setIsMenuOpen(false); }} className="w-full text-left px-5 py-3 text-sm font-bold text-slate-700 dark:text-slate-200 hover:bg-emerald-50 dark:hover:bg-slate-800 flex items-center gap-3 transition-colors">
                       <PieChart className="w-5 h-5 text-emerald-500" /> {t('consumption_share')}
                     </button>
