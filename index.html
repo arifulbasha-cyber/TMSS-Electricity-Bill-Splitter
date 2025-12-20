@@ -11,7 +11,6 @@
     <link rel="manifest" href="/manifest.json" />
     <link apple-touch-icon href="https://cdn-icons-png.flaticon.com/512/2933/2933886.png" />
     
-    <!-- Import Map: Essential for the "Preview" tab to work without a build step -->
     <script type="importmap">
 {
   "imports": {
@@ -34,35 +33,40 @@
 }
 </script>
 
-    <!-- Tailwind CSS via CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
       tailwind.config = {
         darkMode: 'class',
         theme: {
-          extend: {}
+          extend: {
+            fontFamily: {
+              sans: ['Inter', 'sans-serif'],
+            },
+            backdropBlur: {
+              'xs': '2px',
+            }
+          }
         }
       }
     </script>
     <style>
-      @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+      @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
       
       :root {
         --emerald-700: #047857;
-        --slate-900: #0f172a;
+        --slate-900: #020617;
       }
 
-      /* Base styles to allow content to bleed into safe areas */
       html {
         height: 100%;
         margin: 0;
         padding: 0;
-        background-color: var(--emerald-700); /* Default Light Mode Header Color */
+        background-color: #047857;
         overflow: hidden;
       }
 
       html.dark {
-        background-color: var(--slate-900); /* Default Dark Mode Header Color */
+        background-color: #020617;
       }
 
       body {
@@ -73,11 +77,36 @@
         display: flex;
         flex-direction: column;
         overscroll-behavior-y: none;
-        background-color: #f8fafc; /* Content area color */
+        background-color: #f8fafc;
+        position: relative;
       }
       
       .dark body {
-        background-color: #020617; /* Dark content area color */
+        background: linear-gradient(135deg, #020617 0%, #0f172a 100%);
+      }
+
+      /* Aurora Blobs */
+      body::before, body::after {
+        content: '';
+        position: fixed;
+        width: 300px;
+        height: 300px;
+        border-radius: 50%;
+        filter: blur(80px);
+        z-index: -1;
+        opacity: 0.15;
+        pointer-events: none;
+      }
+
+      .dark body::before {
+        top: -50px;
+        left: -50px;
+        background: #10b981;
+      }
+      .dark body::after {
+        bottom: -50px;
+        right: -50px;
+        background: #6366f1;
       }
       
       #root {
@@ -88,61 +117,26 @@
         position: relative;
       }
 
-      /* Safe Area Utilities */
-      .pt-safe {
-        padding-top: env(safe-area-inset-top);
-      }
-      
-      /* Mobile specific override to ensure space for status bar icons */
+      .pt-safe { padding-top: env(safe-area-inset-top); }
       @media (max-width: 768px) {
-        .pt-safe {
-          /* Fallback to at least 24px if env() returns 0, otherwise use safe-area-inset-top */
-          padding-top: max(24px, env(safe-area-inset-top));
-        }
+        .pt-safe { padding-top: max(24px, env(safe-area-inset-top)); }
       }
+      .pb-safe { padding-bottom: env(safe-area-inset-bottom); }
 
-      .pb-safe {
-        padding-bottom: env(safe-area-inset-bottom);
-      }
-      .mb-safe {
-        margin-bottom: env(safe-area-inset-bottom);
-      }
+      ::-webkit-scrollbar { display: none; }
 
-      @media print {
-        .no-print {
-          display: none !important;
-        }
+      /* Glass Classes */
+      .glass-card {
+        background: rgba(255, 255, 255, 0.7);
+        backdrop-filter: blur(20px);
+        border: 0.5px solid rgba(0, 0, 0, 0.05);
       }
-      
-      /* Smooth transitions for dark mode */
-      * {
-        transition-property: background-color, border-color, color, fill, stroke;
-        transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
-        transition-duration: 200ms;
-      }
-
-      /* Scrollbar concealment for cleaner mobile look */
-      ::-webkit-scrollbar {
-        display: none;
+      .dark .glass-card {
+        background: rgba(15, 23, 42, 0.6);
+        backdrop-filter: blur(24px);
+        border: 0.5px solid rgba(255, 255, 255, 0.12);
       }
     </style>
-    <script>
-      // Sync theme-color with status bar color based on dark mode
-      function updateThemeColor() {
-        const isDark = document.documentElement.classList.contains('dark');
-        const meta = document.getElementById('theme-meta');
-        if (meta) {
-          // Set meta theme-color to exactly match header background
-          const color = isDark ? '#0f172a' : '#047857';
-          meta.setAttribute('content', color);
-          // Also set html background to prevent 'white bars' during scrolling or transitions
-          document.documentElement.style.backgroundColor = color;
-        }
-      }
-      const observer = new MutationObserver(updateThemeColor);
-      observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
-      window.addEventListener('load', updateThemeColor);
-    </script>
   </head>
   <body class="bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-100 antialiased">
     <div id="root"></div>

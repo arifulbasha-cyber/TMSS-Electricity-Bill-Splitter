@@ -12,14 +12,14 @@ const MobileNav: React.FC<MobileNavProps> = ({ currentView, onChangeView }) => {
 
   const navItems = [
     { id: 'home', label: 'Home', icon: Home },
-    { id: 'estimator', label: t('bill_estimator'), icon: Zap },
-    { id: 'report', label: t('report'), icon: FileText },
-    { id: 'history', label: t('history'), icon: History },
+    { id: 'estimator', label: 'Sim', icon: Zap },
+    { id: 'report', label: 'Report', icon: FileText },
+    { id: 'history', label: 'Log', icon: History },
   ] as const;
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl border-t border-slate-200 dark:border-slate-800 z-50 pt-2 pb-safe shadow-[0_-8px_30px_rgb(0,0,0,0.04)] print:hidden transition-all duration-200">
-      <div className="flex justify-around items-center max-w-lg mx-auto h-16 sm:h-20 px-2">
+    <div className="fixed bottom-6 left-6 right-6 z-50 no-print">
+      <div className="max-w-md mx-auto h-18 bg-white/70 dark:bg-slate-900/60 backdrop-blur-3xl border border-white/20 dark:border-white/10 rounded-[2.5rem] shadow-2xl shadow-black/20 px-4 flex items-center justify-around">
         {navItems.map((item) => {
           const Icon = item.icon;
           const isActive = currentView === item.id;
@@ -27,20 +27,18 @@ const MobileNav: React.FC<MobileNavProps> = ({ currentView, onChangeView }) => {
             <button 
               key={item.id}
               onClick={() => onChangeView(item.id)}
-              className="flex flex-col items-center gap-1 group relative flex-1"
+              className={`flex flex-col items-center gap-1 transition-all duration-300 relative py-2 ${
+                isActive ? 'scale-110' : 'opacity-40 hover:opacity-100'
+              }`}
             >
-              <div className={`px-5 py-1.5 rounded-2xl transition-all duration-300 ease-out flex items-center justify-center ${
-                isActive 
-                  ? 'bg-emerald-100 dark:bg-emerald-900/50 text-emerald-700 dark:text-emerald-300 shadow-sm' 
-                  : 'bg-transparent text-slate-400 dark:text-slate-500 group-hover:bg-slate-100 dark:group-hover:bg-slate-800/50'
+              <div className={`p-2.5 rounded-2xl transition-all duration-300 ${
+                isActive ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400' : 'text-slate-600 dark:text-white'
               }`}>
-                <Icon className={`w-6 h-6 transition-transform duration-200 ${isActive ? 'scale-110 stroke-[2.5]' : ''}`} />
+                <Icon className={`w-6 h-6 ${isActive ? 'stroke-[2.5px]' : 'stroke-[1.5px]'}`} />
               </div>
-              <span className={`text-[10px] font-black tracking-tight transition-colors duration-200 uppercase ${
-                isActive ? 'text-slate-900 dark:text-slate-100' : 'text-slate-400 dark:text-slate-500'
-              }`}>
-                {item.label}
-              </span>
+              {isActive && (
+                <div className="absolute -bottom-1 w-1 h-1 bg-emerald-500 rounded-full"></div>
+              )}
             </button>
           );
         })}
