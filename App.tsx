@@ -349,7 +349,7 @@ const AppContent: React.FC = () => {
 
       <MobileNav currentView={currentView as any} onChangeView={handleViewChange} />
 
-      <CloudSetupModal isOpen={activeModal === 'cloud'} onClose={() => setActiveModal('none')} onConnected={() => { setIsMenuOpen(false); fetchCloudData(); }} />
+      <CloudSetupModal isOpen={activeModal === 'cloud'} onClose={() => setActiveModal('none')} onConnected={() => { setIsMenuOpen(false); }} />
     </div>
   );
 };
