@@ -49,6 +49,7 @@ const Dashboard: React.FC<DashboardProps> = ({ config, result, mainMeter, meters
   };
 
   const handleTouchEnd = (id: string | 'main' | 'total') => {
+    // If it's a left swipe (diff > 80)
     if (touchDiffRef.current > 80) {
       if (id === 'main') {
         openMainEdit();
@@ -139,8 +140,10 @@ const Dashboard: React.FC<DashboardProps> = ({ config, result, mainMeter, meters
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500 pb-10">
+      {/* Total Bill Card */}
       <div 
-        className="relative overflow-hidden rounded-[3rem]"
+        className="relative overflow-hidden rounded-[3rem] cursor-pointer"
+        onClick={openTotalEdit}
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
         onTouchEnd={() => handleTouchEnd('total')}
@@ -182,6 +185,7 @@ const Dashboard: React.FC<DashboardProps> = ({ config, result, mainMeter, meters
         </div>
       </div>
 
+      {/* Main Meter Card */}
       <div className="space-y-4">
           <div className="flex items-center gap-3 px-2">
               <span className="text-[10px] font-medium uppercase tracking-[0.3em] text-slate-400">{t('main_meter')}</span>
@@ -189,7 +193,8 @@ const Dashboard: React.FC<DashboardProps> = ({ config, result, mainMeter, meters
           </div>
           
           <div 
-            className="relative overflow-hidden rounded-[2.5rem]"
+            className="relative overflow-hidden rounded-[2.5rem] cursor-pointer"
+            onClick={openMainEdit}
             onTouchStart={handleTouchStart}
             onTouchMove={handleTouchMove}
             onTouchEnd={() => handleTouchEnd('main')}
@@ -224,6 +229,7 @@ const Dashboard: React.FC<DashboardProps> = ({ config, result, mainMeter, meters
           </div>
       </div>
 
+      {/* Split List */}
       <div className="space-y-4">
           <div className="flex items-center justify-between px-2">
               <div className="flex items-center gap-3 flex-1">
@@ -243,7 +249,8 @@ const Dashboard: React.FC<DashboardProps> = ({ config, result, mainMeter, meters
                   return (
                       <div 
                         key={user.id} 
-                        className="relative overflow-hidden rounded-[2rem]"
+                        className="relative overflow-hidden rounded-[2rem] cursor-pointer"
+                        onClick={() => openEdit(user.id)}
                         onTouchStart={handleTouchStart}
                         onTouchMove={handleTouchMove}
                         onTouchEnd={() => handleTouchEnd(user.id)}
