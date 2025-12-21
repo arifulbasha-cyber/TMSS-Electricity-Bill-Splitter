@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import { BillConfig, MeterReading, BillCalculationResult, UserCalculation, SavedBill, TariffConfig, Tenant } from './types';
 import { INITIAL_CONFIG, INITIAL_METERS, INITIAL_MAIN_METER, DEFAULT_TARIFF_CONFIG } from './constants';
@@ -133,6 +134,8 @@ const AppContent: React.FC = () => {
       if (cloudHistory) { setHistory(sortBills(cloudHistory)); localStorage.setItem('tmss_bill_history', JSON.stringify(cloudHistory)); }
       if (cloudTariff) { setTariffConfig(cloudTariff); localStorage.setItem('tmss_tariff_config', JSON.stringify(cloudTariff)); }
       if (cloudTenants) { setTenants(cloudTenants); localStorage.setItem('tmss_tenants', JSON.stringify(cloudTenants)); }
+      
+      alert("Local data overwritten with cloud data!");
     } catch (error) { console.error("Cloud fetch error", error); } finally { setIsInitialLoading(false); setIsSyncing(false); setTimeout(() => { isInternalChange.current = false; }, 1000); }
   }, []);
 
@@ -141,15 +144,17 @@ const AppContent: React.FC = () => {
     setIsSyncing(true);
     try {
       const now = Date.now();
+      // Overwrite all cloud parts with current local data
       await Promise.all([
         spreadsheetService.saveDraft({ updatedAt: now, config, mainMeter, meters }),
         spreadsheetService.saveTariff(tariffConfig),
-        spreadsheetService.saveTenants(tenants)
+        spreadsheetService.saveTenants(tenants),
+        spreadsheetService.saveHistory(history)
       ]);
       lastCloudSyncTimestamp.current = now;
-      alert("Local data pushed to cloud!");
+      alert("Cloud data overwritten with local data!");
     } catch (error) { alert("Failed to push data."); } finally { setIsSyncing(false); }
-  }, [config, mainMeter, meters, tariffConfig, tenants]);
+  }, [config, mainMeter, meters, tariffConfig, tenants, history]);
 
   useEffect(() => {
     const savedHistory = localStorage.getItem('tmss_bill_history');

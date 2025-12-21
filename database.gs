@@ -33,6 +33,21 @@ function doPost(e) {
       sheet.appendRow([new Date(), payload.id, JSON.stringify(payload)]);
       return jsonResponse({ status: 'success' });
     } 
+
+    if (action === 'saveHistory') {
+      var sheet = getOrCreateSheet(ss, 'saveBill', ['Timestamp', 'ID', 'Data']);
+      if (sheet.getLastRow() > 1) {
+        sheet.deleteRows(2, sheet.getLastRow() - 1);
+      }
+      if (Array.isArray(payload) && payload.length > 0) {
+        // Prepare data rows
+        var rows = payload.map(function(bill) {
+          return [new Date(), bill.id, JSON.stringify(bill)];
+        });
+        sheet.getRange(2, 1, rows.length, 3).setValues(rows);
+      }
+      return jsonResponse({ status: 'success' });
+    }
     
     if (action === 'saveSettings') {
       var sheet = getOrCreateSheet(ss, 'saveSettings', ['Key', 'Data', 'Last Updated']);

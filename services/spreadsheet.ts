@@ -84,6 +84,10 @@ class SpreadsheetService {
     return this.request('saveBill', bill);
   }
 
+  public async saveHistory(bills: SavedBill[]) {
+    return this.request('saveHistory', bills);
+  }
+
   public async getBills(): Promise<SavedBill[]> {
     try {
       const rows = await this.request('getBills', null, 'GET');
