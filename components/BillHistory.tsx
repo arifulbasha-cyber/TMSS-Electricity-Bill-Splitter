@@ -1,7 +1,6 @@
-
-import React from 'react';
+import React, { useState, useRef } from 'react';
 import { SavedBill } from '../types';
-import { History, RotateCcw, Trash2, Calendar, FileText } from 'lucide-react';
+import { History, Trash2, Calendar, FileText, X, ShieldAlert } from 'lucide-react';
 import { useLanguage } from '../i18n';
 
 interface BillHistoryProps {
@@ -12,8 +11,54 @@ interface BillHistoryProps {
 }
 
 const BillHistory: React.FC<BillHistoryProps> = ({ history, onLoad, onDelete, onViewReport }) => {
-  const { t } = useLanguage();
-  if (history.length === 0) return null;
+  const { t, translateMonth, formatNumber } = useLanguage();
+  const [billToDelete, setBillToDelete] = useState<SavedBill | null>(null);
+  const [confirmText, setConfirmText] = useState('');
+  const touchStartRef = useRef<number | null>(null);
+  const swipeTriggeredRef = useRef<boolean>(false);
+
+  if (history.length === 0) return (
+    <div className="flex flex-col items-center justify-center p-20 bg-white dark:bg-slate-900 rounded-[2.5rem] border border-slate-200 dark:border-slate-800 text-center transition-colors duration-200">
+      <div className="bg-slate-100 dark:bg-slate-800 p-6 rounded-[2rem] mb-6">
+         <History className="w-12 h-12 text-slate-300 dark:text-slate-600" />
+      </div>
+      <h3 className="text-xl font-black text-slate-800 dark:text-slate-100 uppercase tracking-widest">{t('bill_history')}</h3>
+      <p className="text-slate-500 dark:text-slate-400 mt-4 font-bold">No records found yet.</p>
+    </div>
+  );
+
+  const onTouchStart = (e: React.TouchEvent) => {
+    touchStartRef.current = e.targetTouches[0].clientX;
+    swipeTriggeredRef.current = false;
+  };
+
+  const onTouchMove = (e: React.TouchEvent, bill: SavedBill) => {
+    if (touchStartRef.current === null || swipeTriggeredRef.current) return;
+    
+    const diff = touchStartRef.current - e.targetTouches[0].clientX;
+    
+    // If swiped left more than 80px, directly open delete modal
+    if (diff > 80) {
+      swipeTriggeredRef.current = true;
+      handleOpenDeleteConfirm(bill);
+    }
+  };
+
+  const onTouchEnd = () => {
+    touchStartRef.current = null;
+  };
+
+  const handleOpenDeleteConfirm = (bill: SavedBill) => {
+    setBillToDelete(bill);
+    setConfirmText('');
+  };
+
+  const handleConfirmDelete = () => {
+    if (billToDelete && confirmText === billToDelete.config.month) {
+      onDelete(billToDelete.id);
+      setBillToDelete(null);
+    }
+  };
 
   const formatDate = (dateStr: string) => {
     if (!dateStr) return '';
@@ -24,58 +69,123 @@ const BillHistory: React.FC<BillHistoryProps> = ({ history, onLoad, onDelete, on
   };
 
   return (
-    <div className="bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-slate-200 dark:border-slate-800 p-6 print-break-inside-avoid no-print transition-colors duration-200">
-      <div className="flex items-center gap-2 mb-4 border-b border-slate-100 dark:border-slate-800 pb-4">
-        <History className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
-        <h2 className="text-lg font-semibold text-slate-800 dark:text-slate-100">{t('bill_history')}</h2>
+    <div className="space-y-6 animate-in fade-in duration-700">
+      <div className="flex items-center gap-4 mb-8">
+          <div className="bg-emerald-600 p-3 rounded-2xl shadow-lg shadow-emerald-500/20">
+              <History className="w-6 h-6 text-white" />
+          </div>
+          <div>
+              <h2 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight leading-none mb-1.5">{t('bill_history')}</h2>
+              <div className="text-[10px] font-medium text-slate-400 uppercase tracking-[0.25em]">{history.length} SAVED RECORDS</div>
+          </div>
       </div>
+
       <div className="space-y-3">
-        {history.map((bill) => (
-          <div 
-            key={bill.id} 
-            onClick={() => onViewReport(bill)}
-            className="group p-4 rounded-lg bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 hover:border-emerald-200 dark:hover:border-emerald-700 hover:bg-white dark:hover:bg-slate-800 hover:shadow-sm transition-all cursor-pointer relative"
-          >
-            <div className="flex justify-between items-start mb-2">
-              <div>
-                <h4 className="font-bold text-slate-800 dark:text-slate-200">{bill.config.month}</h4>
-                <div className="flex items-center gap-1 text-xs text-slate-500 dark:text-slate-400 mt-1">
-                  <Calendar className="w-3 h-3" />
-                  {formatDate(bill.config.dateGenerated)}
+        {history.map((bill) => {
+          return (
+            <div 
+              key={bill.id} 
+              className="relative overflow-hidden rounded-[2.5rem]"
+              onTouchStart={onTouchStart}
+              onTouchMove={(e) => onTouchMove(e, bill)}
+              onTouchEnd={onTouchEnd}
+            >
+              <div 
+                onClick={() => onViewReport(bill)}
+                className="glass-card bg-white dark:bg-slate-900 p-6 rounded-[2.5rem] shadow-xl border border-white/20 active:scale-[0.98] transition-all duration-300 relative z-10 cursor-pointer hover:border-emerald-500/30"
+              >
+                <div className="flex justify-between items-center">
+                  <div className="flex items-center gap-5">
+                    <div className="w-14 h-14 rounded-2xl bg-emerald-500/10 flex items-center justify-center border border-emerald-500/20 shadow-inner">
+                        <FileText className="w-6 h-6 text-emerald-600 dark:text-emerald-400" />
+                    </div>
+                    <div>
+                      <h4 className="text-lg font-black text-slate-900 dark:text-white leading-none mb-2">{translateMonth(bill.config.month)}</h4>
+                      <div className="flex items-center gap-2 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                        <Calendar className="w-3 h-3" />
+                        {formatDate(bill.config.dateGenerated)}
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="text-right">
+                    <div className="text-3xl font-black text-emerald-600 dark:text-emerald-400 tracking-tighter leading-none mb-1">
+                      ৳{formatNumber(bill.config.totalBillPayable)}
+                    </div>
+                    <div className="text-[8px] font-black text-slate-400 uppercase tracking-widest">
+                      {t('saved_at')} {new Date(bill.savedAt).toLocaleDateString()}
+                    </div>
+                  </div>
                 </div>
               </div>
-              <span className="text-sm font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/30 px-2 py-1 rounded-md">
-                ৳{bill.config.totalBillPayable}
-              </span>
             </div>
+          );
+        })}
+      </div>
+
+      {/* Physical Delete Confirmation Modal */}
+      {billToDelete && (
+        <div 
+          onClick={() => setBillToDelete(null)}
+          className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-950/90 backdrop-blur-xl animate-in fade-in duration-300"
+        >
+          <div 
+            onClick={(e) => e.stopPropagation()}
+            className="glass-card bg-white dark:bg-slate-900 w-full max-w-sm rounded-[3rem] p-8 shadow-2xl border border-rose-500/20 animate-in slide-in-from-bottom-4 relative overflow-hidden"
+          >
+            {/* Visual Warning Decoration */}
+            <div className="absolute top-0 right-0 w-32 h-32 bg-rose-500/10 rounded-full blur-3xl -mr-16 -mt-16"></div>
             
-            <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity hidden sm:block">
-               <div className="flex items-center gap-1 text-xs font-bold text-emerald-500">
-                   <FileText className="w-3 h-3" /> {t('report')}
-               </div>
-            </div>
-            
-            <div className="flex items-center gap-2 mt-3 pt-3 border-t border-slate-100 dark:border-slate-700" onClick={(e) => e.stopPropagation()}>
-              <button
-                onClick={() => onLoad(bill)}
-                className="flex-1 flex items-center justify-center gap-1.5 text-xs font-medium bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-300 py-1.5 rounded hover:bg-emerald-50 dark:hover:bg-emerald-900/30 hover:text-emerald-700 dark:hover:text-emerald-300 hover:border-emerald-200 dark:hover:border-emerald-700 transition-colors"
-              >
-                <RotateCcw className="w-3 h-3" /> {t('restore')}
-              </button>
-              <button
-                onClick={() => onDelete(bill.id)}
-                className="flex items-center justify-center gap-1.5 text-xs font-medium bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-600 text-red-600 dark:text-red-400 py-1.5 px-3 rounded hover:bg-red-50 dark:hover:bg-red-900/20 hover:border-red-200 dark:hover:border-red-800 transition-colors"
-                title={t('delete')}
-              >
-                <Trash2 className="w-3 h-3" />
-              </button>
-            </div>
-            <div className="text-[10px] text-slate-400 dark:text-slate-500 text-right mt-1">
-              {t('saved_at')} {new Date(bill.savedAt).toLocaleString()}
+            <div className="relative z-10">
+              <div className="flex items-center justify-between mb-8">
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 rounded-2xl bg-rose-500/10 flex items-center justify-center text-rose-500 border border-rose-500/20 shadow-inner">
+                     <ShieldAlert className="w-6 h-6" />
+                  </div>
+                  <h3 className="text-xl font-black text-slate-900 dark:text-white uppercase tracking-tight">Security Check</h3>
+                </div>
+                <button onClick={() => setBillToDelete(null)} className="p-3 bg-black/5 dark:bg-white/5 rounded-2xl active:scale-90 transition-all">
+                    <X className="w-5 h-5 text-slate-500" />
+                </button>
+              </div>
+
+              <div className="space-y-6">
+                <div className="p-5 rounded-2xl bg-rose-500/5 border border-rose-500/10">
+                  <p className="text-xs font-bold text-slate-600 dark:text-slate-300 leading-relaxed mb-4">
+                    To permanently delete the bill for <span className="text-rose-500 font-black px-1">{translateMonth(billToDelete.config.month)}</span>, please type the month name exactly as shown.
+                  </p>
+                  
+                  <div className="relative">
+                    <label className="absolute left-4 top-2.5 text-[8px] font-black text-rose-500/60 uppercase tracking-[0.2em]">TYPE MONTH NAME</label>
+                    <input 
+                      type="text"
+                      autoFocus
+                      placeholder={billToDelete.config.month}
+                      value={confirmText}
+                      onChange={(e) => setConfirmText(e.target.value)}
+                      className="w-full h-16 rounded-xl bg-white dark:bg-slate-950 border border-rose-500/20 px-4 pt-6 pb-2 text-base font-black text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-rose-500/20 transition-all placeholder:text-slate-200 dark:placeholder:text-slate-800"
+                    />
+                  </div>
+                </div>
+
+                <div className="pt-4">
+                  <button 
+                    disabled={confirmText !== billToDelete.config.month}
+                    onClick={handleConfirmDelete}
+                    className={`w-full h-14 rounded-2xl font-black text-xs uppercase tracking-[0.2em] transition-all flex items-center justify-center gap-3 ${
+                      confirmText === billToDelete.config.month
+                        ? 'bg-rose-600 text-white shadow-xl shadow-rose-500/30 active:scale-95'
+                        : 'bg-slate-200 dark:bg-slate-800 text-slate-400 cursor-not-allowed opacity-50'
+                    }`}
+                  >
+                    <Trash2 className="w-5 h-5" /> Physical Delete
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
-        ))}
-      </div>
+        </div>
+      )}
     </div>
   );
 };

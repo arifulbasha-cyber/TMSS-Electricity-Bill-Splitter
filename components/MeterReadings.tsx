@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { MeterReading, Tenant, TariffConfig } from '../types';
-import { Users, Trash2, Plus, Zap, Lock, ChevronDown, ChevronUp, AlertTriangle, Settings, Hash, Activity } from 'lucide-react';
+import { Users, Trash2, Plus, Zap, Lock, ChevronDown, ChevronUp, AlertTriangle, Settings, Hash, Activity, Edit2 } from 'lucide-react';
 import { useLanguage } from '../i18n';
 
 interface MeterReadingsProps {
@@ -30,6 +30,7 @@ const MeterReadings: React.FC<MeterReadingsProps> = ({
     if (newSet.has(id)) newSet.delete(id);
     else newSet.add(id);
     setExpandedCards(newSet);
+    setSwipedCardId(null);
   };
   
   const handleChange = (id: string, key: keyof MeterReading, value: string | number) => {
@@ -50,7 +51,9 @@ const MeterReadings: React.FC<MeterReadingsProps> = ({
   const onTouchMove = (e: React.TouchEvent, id: string) => {
     if (readOnly || touchStartRef.current === null) return;
     const diff = touchStartRef.current - e.targetTouches[0].clientX;
+    // Left swipe to reveal "Open" action
     if (diff > 50) setSwipedCardId(id);
+    // Right swipe to close
     if (diff < -50) setSwipedCardId(null);
   };
 
@@ -78,7 +81,7 @@ const MeterReadings: React.FC<MeterReadingsProps> = ({
         )}
       </div>
 
-      {/* Main Meter Section - Premium Glass Card */}
+      {/* Main Meter Section */}
       <div className="glass-card rounded-[2.5rem] p-8 shadow-2xl relative overflow-hidden group">
            <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/10 rounded-full blur-3xl group-hover:bg-emerald-500/20 transition-all"></div>
            <div className="flex justify-between items-start mb-8 relative z-10">
@@ -119,7 +122,7 @@ const MeterReadings: React.FC<MeterReadingsProps> = ({
            </div>
       </div>
 
-      {/* Individual Meter List - Glass Shadow Cards with Solid White/Dark BG to hide the swipe layer */}
+      {/* Individual Meter List */}
       <div className="space-y-6">
         {readings.map((reading) => {
              const units = Math.max(0, reading.current - reading.previous);
@@ -130,10 +133,13 @@ const MeterReadings: React.FC<MeterReadingsProps> = ({
              
              return (
                <div key={reading.id} className="relative overflow-hidden rounded-[2.5rem]">
-                 {/* This red layer is what was showing through. We keep it but hide it with a solid card on top. */}
+                 {/* Swipe reveal action */}
                  {!readOnly && (
-                    <div className="absolute inset-0 bg-rose-600 flex items-center justify-end pr-10">
-                        <Trash2 className="text-white w-6 h-6" />
+                    <div 
+                      className="absolute inset-0 bg-emerald-600 flex items-center justify-end pr-10 cursor-pointer"
+                      onClick={() => toggleExpand(reading.id)}
+                    >
+                        <Edit2 className="text-white w-6 h-6" />
                     </div>
                  )}
                  
@@ -180,7 +186,7 @@ const MeterReadings: React.FC<MeterReadingsProps> = ({
                                 readOnly={readOnly} type="number" value={reading.current}
                                 onChange={(e) => handleChange(reading.id, 'current', parseFloat(e.target.value) || 0)}
                                 onFocus={(e) => e.target.select()}
-                                className="w-full bg-black/5 dark:bg-white/5 rounded-xl px-4 pt-6 pb-2 text-right text-sm font-black text-slate-900 dark:text-white outline-none border border-transparent focus:border-emerald-500/20 transition-all focus:bg-white dark:focus:bg-slate-900"
+                                className="w-full bg-black/5 dark:bg-white/5 rounded-xl px-4 pt-6 pb-2 text-right text-sm font-black text-slate-900 dark:text-white outline-none border border-transparent focus:bg-white dark:focus:bg-slate-900 focus:ring-1 focus:ring-emerald-500/20 transition-all"
                             />
                          </div>
                       </div>
@@ -228,7 +234,7 @@ const MeterReadings: React.FC<MeterReadingsProps> = ({
         })}
       </div>
 
-      {/* Aggregated Total Units - CLEARLY AT THE BOTTOM */}
+      {/* Aggregated Total Units */}
       <div className="mt-12 pt-12 border-t-2 border-slate-900 dark:border-white border-dashed px-2 flex flex-col sm:flex-row justify-between items-center gap-6 animate-in fade-in slide-in-from-bottom-4 duration-1000">
           <div className="flex items-center gap-4">
               <div className="bg-slate-900 dark:bg-white p-3 rounded-2xl shadow-xl">

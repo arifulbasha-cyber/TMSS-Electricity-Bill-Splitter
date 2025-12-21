@@ -2,8 +2,6 @@ import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react'
 import { BillConfig, MeterReading, BillCalculationResult, UserCalculation, SavedBill, TariffConfig, Tenant } from './types';
 import { INITIAL_CONFIG, INITIAL_METERS, INITIAL_MAIN_METER, DEFAULT_TARIFF_CONFIG } from './constants';
 import Dashboard from './components/Dashboard';
-import BillConfiguration from './components/BillConfiguration';
-import MeterReadings from './components/MeterReadings';
 import ConsumptionStats from './components/ConsumptionStats';
 import CalculationSummary from './components/CalculationSummary';
 import BillHistory from './components/BillHistory';
@@ -14,7 +12,7 @@ import TrendsDashboard from './components/TrendsDashboard';
 import CloudSetupModal from './components/CloudSetupModal';
 import MobileNav from './components/MobileNav';
 import SkeletonLoader from './components/SkeletonLoader';
-import { Lightbulb, Database, Settings, Users, Cloud, Moon, Sun, Menu, ArrowRight, PieChart, BarChart3, RefreshCw, Plus, ArrowLeft, FileSpreadsheet, DownloadCloud, UploadCloud } from 'lucide-react';
+import { Lightbulb, Database, Settings, Users, Cloud, Moon, Sun, Menu, ArrowRight, PieChart, BarChart3, RefreshCw, FileSpreadsheet, UploadCloud, DownloadCloud } from 'lucide-react';
 import { LanguageProvider, useLanguage } from './i18n';
 import { ThemeProvider, useTheme } from './components/ThemeContext';
 import { spreadsheetService } from './services/spreadsheet';
@@ -72,7 +70,7 @@ const calculateBillBreakdown = (
 const AppContent: React.FC = () => {
   const { t, language, setLanguage } = useLanguage();
   const { theme, toggleTheme } = useTheme();
-  type AppView = 'home' | 'input' | 'estimator' | 'report' | 'history' | 'stats' | 'trends' | 'tenants' | 'tariff';
+  type AppView = 'home' | 'estimator' | 'report' | 'history' | 'stats' | 'trends' | 'tenants' | 'tariff';
   const [currentView, setCurrentView] = useState<AppView>('home');
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [viewedBill, setViewedBill] = useState<SavedBill | null>(null);
@@ -85,9 +83,21 @@ const AppContent: React.FC = () => {
   const [tenants, setTenants] = useState<Tenant[]>([]);
   const [isSyncing, setIsSyncing] = useState(false);
   const [isInitialLoading, setIsInitialLoading] = useState(false);
+  
+  const menuRef = useRef<HTMLDivElement>(null);
   const lastCloudSyncTimestamp = useRef<number>(0);
   const isFirstRender = useRef(true);
   const isInternalChange = useRef(false);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (isMenuOpen && menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setIsMenuOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [isMenuOpen]);
 
   useEffect(() => {
     const handleStatusBar = async () => {
@@ -123,8 +133,7 @@ const AppContent: React.FC = () => {
       if (cloudHistory) { setHistory(sortBills(cloudHistory)); localStorage.setItem('tmss_bill_history', JSON.stringify(cloudHistory)); }
       if (cloudTariff) { setTariffConfig(cloudTariff); localStorage.setItem('tmss_tariff_config', JSON.stringify(cloudTariff)); }
       if (cloudTenants) { setTenants(cloudTenants); localStorage.setItem('tmss_tenants', JSON.stringify(cloudTenants)); }
-      alert("Cloud data pulled successfully.");
-    } catch (error) { alert("Failed to pull data."); } finally { setIsInitialLoading(false); setIsSyncing(false); setTimeout(() => { isInternalChange.current = false; }, 1000); }
+    } catch (error) { console.error("Cloud fetch error", error); } finally { setIsInitialLoading(false); setIsSyncing(false); setTimeout(() => { isInternalChange.current = false; }, 1000); }
   }, []);
 
   const pushCloudData = useCallback(async () => {
@@ -176,16 +185,8 @@ const AppContent: React.FC = () => {
 
   const handleViewChange = (view: AppView) => {
       setCurrentView(view);
-      if (view !== 'report' && view !== 'input') setViewedBill(null);
+      if (view !== 'report') setViewedBill(null);
       window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
-
-  const handleConfigChange = (key: keyof BillConfig, value: string | number | boolean) => {
-    setConfig(prev => {
-        const newData = { ...prev, [key]: value };
-        if (key === 'includeBkashFee') newData.bkashFee = value ? tariffConfig.bkashCharge : 0;
-        return newData;
-    });
   };
 
   const handleTariffSave = async (newConfig: TariffConfig) => {
@@ -234,22 +235,11 @@ const AppContent: React.FC = () => {
   const activeMeters = viewedBill ? viewedBill.meters : meters;
   const activeMainMeter = viewedBill ? viewedBill.mainMeter : mainMeter;
   const calculationResult: BillCalculationResult = useMemo(() => calculateBillBreakdown(activeConfig, activeMeters, tariffConfig), [activeConfig, activeMeters, tariffConfig]);
-  const maxUserUnits = useMemo(() => {
-    let max = 0;
-    activeMeters.forEach(m => { const u = Math.max(0, m.current - m.previous); if (u > max) max = u; });
-    return max;
-  }, [activeMeters]);
 
   const renderView = () => {
     if (isInitialLoading) return <SkeletonLoader />;
     switch(currentView) {
-      case 'home': return <Dashboard config={config} result={calculationResult} mainMeter={mainMeter} />;
-      case 'input': return (
-          <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4">
-            <BillConfiguration config={activeConfig} onChange={handleConfigChange} tariffConfig={tariffConfig} onSaveHistory={saveToHistory} readOnly={!!viewedBill} totalUnits={calculationResult.totalUnits} />
-            <MeterReadings mainMeter={activeMainMeter} onMainMeterUpdate={setMainMeter} readings={activeMeters} onUpdate={setMeters} tenants={tenants} onManageTenants={() => handleViewChange('tenants')} maxUnits={maxUserUnits} calculatedRate={calculationResult.calculatedRate} tariffConfig={tariffConfig} readOnly={!!viewedBill} />
-          </div>
-        );
+      case 'home': return <Dashboard config={config} result={calculationResult} mainMeter={mainMeter} meters={meters} onUpdateMeters={setMeters} onMainMeterUpdate={setMainMeter} onConfigUpdate={setConfig} tenants={tenants} tariffConfig={tariffConfig} onSaveHistory={saveToHistory} />;
       case 'estimator': return <BillEstimator tariffConfig={tariffConfig} />;
       case 'report': return <CalculationSummary result={calculationResult} config={activeConfig} mainMeter={activeMainMeter} meters={activeMeters} onSaveHistory={saveToHistory} tariffConfig={tariffConfig} isHistorical={!!viewedBill} onClose={() => handleViewChange('home')} />;
       case 'history': return <BillHistory history={history} onLoad={loadFromHistory} onDelete={(id) => { if (window.confirm(t('confirm_delete'))) setHistory(history.filter(h => h.id !== id)); }} onViewReport={(record) => { setViewedBill(record); setCurrentView('report'); }} />;
@@ -265,7 +255,6 @@ const AppContent: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-transparent pb-safe transition-colors duration-500">
-      {/* Premium Green Glass Header */}
       <header className="sticky top-0 z-30 no-print pt-safe border-b border-white/10 bg-emerald-900/80 backdrop-blur-2xl shadow-xl">
         <div className="px-5 h-20 flex items-center justify-between">
           <div className="flex items-center gap-4">
@@ -290,14 +279,20 @@ const AppContent: React.FC = () => {
           </div>
             
           <div className="relative">
-            <button onClick={() => setIsMenuOpen(!isMenuOpen)} className="p-3 text-white/90 hover:bg-white/10 rounded-2xl transition-all active:scale-90">
+            <button 
+              onClick={(e) => {
+                e.stopPropagation();
+                setIsMenuOpen(!isMenuOpen);
+              }} 
+              className="p-3 text-white/90 hover:bg-white/10 rounded-2xl transition-all active:scale-90"
+            >
               <Menu className="w-6 h-6" />
             </button>
 
             {isMenuOpen && (
               <>
-                <div className="fixed inset-0 z-40" onClick={() => setIsMenuOpen(false)}></div>
-                <div className="absolute right-0 top-full mt-3 w-64 glass-card rounded-[2.5rem] shadow-2xl py-3 z-50 animate-in fade-in slide-in-from-top-2 overflow-hidden border border-white/10">
+                <div className="fixed inset-0 z-40 bg-slate-950/90 backdrop-blur-md animate-in fade-in duration-300" onClick={() => setIsMenuOpen(false)}></div>
+                <div ref={menuRef} className="absolute right-0 top-full mt-3 w-64 bg-white dark:bg-slate-900 rounded-[2.5rem] shadow-[0_35px_60px_-15px_rgba(0,0,0,0.5)] py-3 z-50 animate-in fade-in slide-in-from-top-2 overflow-hidden border border-white/20">
                   {isCloudReady && (
                     <div className="px-2 pb-2">
                       <div className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest px-4 mb-2 pt-1">Cloud Sync</div>
@@ -336,12 +331,6 @@ const AppContent: React.FC = () => {
                       {theme === 'dark' ? <Moon className="w-5 h-5" /> : <Sun className="w-5 h-5" />}
                     </button>
                   </div>
-                  <div className="px-5 py-2">
-                    <div className="flex rounded-xl bg-black/5 dark:bg-white/5 p-1 w-full border border-white/5">
-                      <button onClick={() => setLanguage('en')} className={`flex-1 py-1 text-[9px] font-black rounded-lg transition-all ${language === 'en' ? 'bg-white dark:bg-slate-700 text-emerald-600 shadow-sm' : 'text-slate-400'}`}>ENGLISH</button>
-                      <button onClick={() => setLanguage('bn')} className={`flex-1 py-1 text-[9px] font-black rounded-lg transition-all ${language === 'bn' ? 'bg-white dark:bg-slate-700 text-emerald-600 shadow-sm' : 'text-slate-400'}`}>বাংলা</button>
-                    </div>
-                  </div>
                 </div>
               </>
             )}
@@ -354,12 +343,6 @@ const AppContent: React.FC = () => {
       </main>
 
       <MobileNav currentView={currentView as any} onChangeView={handleViewChange} />
-
-      {currentView === 'home' && (
-        <button onClick={() => handleViewChange('input')} className="fixed bottom-28 right-6 w-16 h-16 bg-emerald-600 text-white rounded-[2rem] shadow-2xl flex items-center justify-center z-40 transition-all hover:scale-105 active:scale-95 mb-safe border border-emerald-500/20">
-          <Plus className="w-8 h-8" />
-        </button>
-      )}
 
       <CloudSetupModal isOpen={activeModal === 'cloud'} onClose={() => setActiveModal('none')} onConnected={() => { setIsMenuOpen(false); fetchCloudData(); }} />
     </div>
