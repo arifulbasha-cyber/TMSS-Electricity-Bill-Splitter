@@ -12,7 +12,7 @@ interface BillConfigurationProps {
   totalUnits?: number;
 }
 
-const BillConfiguration: React.FC<BillConfigurationProps> = ({ config, onChange, tariffConfig, onSaveHistory, readOnly = false, totalUnits = 0 }) => {
+const BillConfiguration: React.FC<BillConfigurationProps> = ({ config, onChange, tariffConfig, onSaveHistory, readOnly = false }) => {
   const { t, translateMonth, formatNumber } = useLanguage();
   const [isSaved, setIsSaved] = useState(false);
 
@@ -47,31 +47,6 @@ const BillConfiguration: React.FC<BillConfigurationProps> = ({ config, onChange,
       </div>
 
       <div className="space-y-8 relative z-10">
-        {/* Aggregated Units Section */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="bg-black/5 dark:bg-white/5 rounded-[2rem] p-6 border border-white/5 shadow-inner">
-                <div className="flex items-center gap-2 mb-3">
-                    <Zap className="w-3.5 h-3.5 text-amber-500" />
-                    <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">{t('total_user_units')}</span>
-                </div>
-                <div className="flex items-baseline gap-2">
-                    <span className="text-4xl font-black text-slate-900 dark:text-white tracking-tighter">{formatNumber(totalUnits)}</span>
-                    <span className="text-xs font-bold text-slate-400">kWh</span>
-                </div>
-            </div>
-
-            <div className="bg-black/5 dark:bg-white/5 rounded-[2rem] p-6 border border-white/5 shadow-inner">
-                <div className="flex items-center gap-2 mb-3">
-                    <Activity className="w-3.5 h-3.5 text-indigo-500" />
-                    <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Base Rate Target</span>
-                </div>
-                <div className="flex items-baseline gap-2">
-                    <span className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">৳{formatNumber((config.totalBillPayable / (totalUnits || 1)).toFixed(2))}</span>
-                    <span className="text-[9px] font-bold text-slate-400 uppercase">per unit</span>
-                </div>
-            </div>
-        </div>
-
         {/* Date & Month Row */}
         <div className="grid grid-cols-2 gap-4 p-2 rounded-[2.5rem] bg-black/5 dark:bg-white/5 border border-white/5">
            <div className="relative group">

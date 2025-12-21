@@ -1,7 +1,7 @@
 import React from 'react';
 import { BillCalculationResult, BillConfig, MeterReading } from '../types';
 import { useLanguage } from '../i18n';
-import { Zap, Banknote, Users2, Activity } from 'lucide-react';
+import { Zap, Banknote, Users2, Activity, Hash } from 'lucide-react';
 
 interface DashboardProps {
   config: BillConfig;
@@ -61,18 +61,18 @@ const Dashboard: React.FC<DashboardProps> = ({ config, result, mainMeter }) => {
           </div>
       </div>
 
-      {/* Individual Bills - Luxury List */}
-      <div className="space-y-5">
+      {/* Individual Bills - Transparent luxury list */}
+      <div className="space-y-4">
           <div className="flex items-center gap-3 px-2">
               <span className="text-[10px] font-medium uppercase tracking-[0.3em] text-slate-400">{t('final_split')}</span>
               <div className="h-[0.5px] flex-1 bg-black/5 dark:bg-white/10"></div>
           </div>
           
-          <div className="space-y-4">
+          <div className="divide-y divide-black/5 dark:divide-white/5">
               {result.userCalculations.map((user) => (
-                  <div key={user.id} className="glass-card rounded-[2rem] p-5 flex items-center justify-between group active:scale-[0.98] transition-all">
+                  <div key={user.id} className="py-6 px-2 flex items-center justify-between group active:scale-[0.98] transition-all bg-transparent">
                       <div className="flex items-center gap-5">
-                          <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-emerald-500/10 to-indigo-500/10 dark:from-emerald-500/20 dark:to-indigo-500/20 flex items-center justify-center border border-white/10">
+                          <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-emerald-500/10 to-indigo-500/10 dark:from-emerald-500/20 dark:to-indigo-500/20 flex items-center justify-center border border-black/5 dark:border-white/10 shadow-sm">
                               <span className="text-base font-black text-emerald-600 dark:text-emerald-400">{user.name.substring(0, 2).toUpperCase()}</span>
                           </div>
                           <div>
@@ -87,21 +87,29 @@ const Dashboard: React.FC<DashboardProps> = ({ config, result, mainMeter }) => {
                   </div>
               ))}
           </div>
+
+          {/* Aggregated Total Units - Positioned directly under user cards */}
+          <div className="glass-card p-6 rounded-[2.5rem] bg-emerald-500/5 border-emerald-500/10 flex justify-between items-center mt-2">
+              <div className="flex items-center gap-3">
+                  <div className="bg-emerald-600/10 p-2 rounded-xl">
+                      <Zap className="w-4 h-4 text-emerald-600" />
+                  </div>
+                  <span className="text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest">{t('total_user_units')}</span>
+              </div>
+              <div className="text-3xl font-black text-slate-900 dark:text-white tracking-tighter">
+                  {formatNumber(result.totalUnits)} <span className="text-[10px] tracking-normal font-medium text-slate-400 ml-0.5">KWH</span>
+              </div>
+          </div>
       </div>
 
-      {/* Secondary Summary Glass */}
-      <div className="glass-card p-8 rounded-[2.5rem] border-emerald-500/10">
-          <div className="grid grid-cols-2 gap-10">
-              <div>
-                  <div className="text-[9px] font-medium text-slate-400 uppercase tracking-[0.25em] mb-3">{t('total_user_units')}</div>
-                  <div className="text-3xl font-black text-slate-900 dark:text-white tracking-tighter">{formatNumber(result.totalUnits)} <span className="text-[10px] tracking-normal font-medium text-slate-400 ml-1">KWH</span></div>
+      {/* House Overhead Summary */}
+      <div className="glass-card p-8 rounded-[2.5rem] border-amber-500/10 bg-amber-500/5">
+          <div className="flex flex-col items-center text-center">
+              <div className="text-[9px] font-medium text-slate-400 uppercase tracking-[0.25em] mb-3">{t('system_loss')}</div>
+              <div className={`text-5xl font-black tracking-tighter ${systemLoss > 0 ? 'text-amber-500' : 'text-emerald-500'}`}>
+                  {formatNumber(systemLoss.toFixed(1))} <span className="text-xs tracking-normal font-medium text-slate-400 ml-1">KWH</span>
               </div>
-              <div className="text-right">
-                  <div className="text-[9px] font-medium text-slate-400 uppercase tracking-[0.25em] mb-3">{t('system_loss')}</div>
-                  <div className={`text-3xl font-black tracking-tighter ${systemLoss > 0 ? 'text-amber-500' : 'text-emerald-500'}`}>
-                      {formatNumber(systemLoss.toFixed(1))} <span className="text-[10px] tracking-normal font-medium text-slate-400 ml-1">KWH</span>
-                  </div>
-              </div>
+              <div className="text-[8px] font-black uppercase tracking-widest text-slate-400 mt-4 opacity-60">UNACCOUNTED VARIANCE</div>
           </div>
       </div>
     </div>
