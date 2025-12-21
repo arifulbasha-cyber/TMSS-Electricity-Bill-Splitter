@@ -63,22 +63,23 @@ class SpreadsheetService {
       try {
         data = JSON.parse(responseText);
       } catch (parseError) {
-        // If it's an HTML response, it might be a Google Login page or an error page
         if (responseText.includes('<!DOCTYPE html>')) {
-          throw new Error("Cloud script returned an error page. Ensure the script is deployed as 'Anyone' can access.");
+          throw new Error("Script returned HTML. Ensure you deployed as 'Web App' and set access to 'Anyone'.");
         }
-        console.error("Non-JSON response from Apps Script:", responseText);
         throw new Error("Invalid response from cloud service.");
       }
 
       if (data && data.status === 'error') {
+        // Specifically catch the "Unknown action" to help the user
+        if (data.message.includes('Unknown action')) {
+          throw new Error(data.message);
+        }
         throw new Error(data.message || "Cloud sync error");
       }
 
       return data;
     } catch (err: any) {
-      console.error("Spreadsheet Sync Failed:", err);
-      // Re-throw so the UI can handle/display it
+      console.error(`Spreadsheet Sync [${action}] Failed:`, err);
       throw err;
     }
   }
@@ -117,6 +118,7 @@ class SpreadsheetService {
     return this.request('getSettings', 'tariff', 'GET');
   }
 
+  // Fixed: Removed unused uid parameter to match usage in App.tsx
   public async saveTenants(tenants: Tenant[]) {
     return this.request('saveSettings', { key: 'tenants', data: tenants });
   }

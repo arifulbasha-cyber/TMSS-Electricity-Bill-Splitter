@@ -1,61 +1,54 @@
 
 /**
- * TMSS Bill Splitter - Backend Service
- * Updated for better reliability and concurrency.
+ * TMSS Bill Splitter - Backend Service v2.1
  * 
- * INSTRUCTIONS:
- * 1. Open a Google Spreadsheet.
- * 2. Go to Extensions > Apps Script.
- * 3. Delete any existing code and paste this script.
- * 4. Click 'Deploy' > 'New Deployment'.
- * 5. Select type 'Web App'.
- * 6. Set 'Execute as' to 'Me'.
- * 7. Set 'Who has access' to 'Anyone' (IMPORTANT).
- * 8. Copy the Web App URL and paste it into the Cloud Setup modal in the app.
+ * IMPORTANT: After pasting this code, you MUST:
+ * 1. Click 'Save'
+ * 2. Click 'Deploy' > 'New Deployment'
+ * 3. Select 'Web App', set 'Who has access' to 'Anyone'
+ * 4. Copy the NEW URL provided.
  */
 
 function doPost(e) {
   var lock = LockService.getScriptLock();
   try {
-    // Wait up to 30 seconds for other processes to finish
     lock.waitLock(30000); 
     
     var contents = e.postData.contents;
     var data = JSON.parse(contents);
-    var action = data.action;
+    var action = (data.action || "").toString().trim();
     var payload = data.payload;
     var ss = SpreadsheetApp.getActiveSpreadsheet();
     
-    if (!ss) throw new Error("Spreadsheet not found. Please ensure the script is bound to a Google Sheet.");
+    if (!ss) throw new Error("Spreadsheet not found.");
 
-    if (action === 'saveBill') {
-      var sheet = getOrCreateSheet(ss, 'saveBill', ['Timestamp', 'ID', 'Data']);
-      sheet.appendRow([new Date(), payload.id, JSON.stringify(payload)]);
-      return jsonResponse({ status: 'success' });
-    } 
+    switch(action) {
+      case 'saveBill':
+        var sheet = getOrCreateSheet(ss, 'saveBill', ['Timestamp', 'ID', 'Data']);
+        sheet.appendRow([new Date(), payload.id, JSON.stringify(payload)]);
+        return jsonResponse({ status: 'success' });
 
-    if (action === 'saveHistory') {
-      var sheet = getOrCreateSheet(ss, 'saveBill', ['Timestamp', 'ID', 'Data']);
-      if (sheet.getLastRow() > 1) {
-        sheet.deleteRows(2, sheet.getLastRow() - 1);
-      }
-      if (Array.isArray(payload) && payload.length > 0) {
-        // Prepare data rows
-        var rows = payload.map(function(bill) {
-          return [new Date(), bill.id, JSON.stringify(bill)];
-        });
-        sheet.getRange(2, 1, rows.length, 3).setValues(rows);
-      }
-      return jsonResponse({ status: 'success' });
+      case 'saveHistory':
+        var sheet = getOrCreateSheet(ss, 'saveBill', ['Timestamp', 'ID', 'Data']);
+        if (sheet.getLastRow() > 1) {
+          sheet.deleteRows(2, sheet.getLastRow() - 1);
+        }
+        if (Array.isArray(payload) && payload.length > 0) {
+          var rows = payload.map(function(bill) {
+            return [new Date(), bill.id, JSON.stringify(bill)];
+          });
+          sheet.getRange(2, 1, rows.length, 3).setValues(rows);
+        }
+        return jsonResponse({ status: 'success' });
+
+      case 'saveSettings':
+        var sheet = getOrCreateSheet(ss, 'saveSettings', ['Key', 'Data', 'Last Updated']);
+        updateOrInsertSetting(sheet, payload.key, JSON.stringify(payload.data));
+        return jsonResponse({ status: 'success' });
+
+      default:
+        return jsonResponse({ status: 'error', message: 'Unknown action: "' + action + '". Please ensure you have created a NEW DEPLOYMENT in Apps Script.' });
     }
-    
-    if (action === 'saveSettings') {
-      var sheet = getOrCreateSheet(ss, 'saveSettings', ['Key', 'Data', 'Last Updated']);
-      updateOrInsertSetting(sheet, payload.key, JSON.stringify(payload.data));
-      return jsonResponse({ status: 'success' });
-    }
-    
-    return jsonResponse({ status: 'error', message: 'Unknown action: ' + action });
   } catch (err) {
     return jsonResponse({ status: 'error', message: err.toString() });
   } finally {
@@ -65,26 +58,30 @@ function doPost(e) {
 
 function doGet(e) {
   try {
-    var action = e.parameter.action;
+    var action = (e.parameter.action || "").toString().trim();
     var ss = SpreadsheetApp.getActiveSpreadsheet();
     if (!ss) throw new Error("Spreadsheet context missing.");
 
-    if (action === 'getBills') {
-      var sheet = ss.getSheetByName('saveBill');
-      if (!sheet) return jsonResponse([]);
-      var values = sheet.getDataRange().getValues();
-      return jsonResponse(values); 
+    switch(action) {
+      case 'getBills':
+        var sheet = ss.getSheetByName('saveBill');
+        if (!sheet) return jsonResponse([]);
+        var values = sheet.getDataRange().getValues();
+        return jsonResponse(values); 
+
+      case 'getSettings':
+        var key = e.parameter.key;
+        var sheet = ss.getSheetByName('saveSettings');
+        if (!sheet) return jsonResponse(null);
+        var data = getSettingByKey(sheet, key);
+        return jsonResponse(data ? JSON.parse(data) : null);
+
+      case 'version':
+        return jsonResponse({ version: '2.1', status: 'ready' });
+
+      default:
+        return jsonResponse({ status: 'error', message: 'Invalid action: ' + action });
     }
-    
-    if (action === 'getSettings') {
-      var key = e.parameter.key;
-      var sheet = ss.getSheetByName('saveSettings');
-      if (!sheet) return jsonResponse(null);
-      var data = getSettingByKey(sheet, key);
-      return jsonResponse(data ? JSON.parse(data) : null);
-    }
-    
-    return jsonResponse({ status: 'error', message: 'Invalid action' });
   } catch (err) {
     return jsonResponse({ status: 'error', message: err.toString() });
   }
