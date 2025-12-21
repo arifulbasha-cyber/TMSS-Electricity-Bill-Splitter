@@ -4,7 +4,6 @@ import { useLanguage } from '../i18n';
 import { X, AlertCircle, FileSpreadsheet, Copy, Check, ExternalLink } from 'lucide-react';
 import { spreadsheetService } from '../services/spreadsheet';
 
-// Fix: Added missing CloudSetupModalProps interface
 interface CloudSetupModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -199,10 +198,13 @@ const CloudSetupModal: React.FC<CloudSetupModalProps> = ({ isOpen, onClose, onCo
               <li>Open a <strong>Google Spreadsheet</strong>.</li>
               <li>Go to <strong>Extensions &gt; Apps Script</strong>.</li>
               <li>Delete all code and paste the script below.</li>
-              <li>Click <strong>Deploy &gt; New Deployment</strong>.</li>
+              <li>Click <strong>Deploy &gt; New Deployment</strong> (CRITICAL).</li>
               <li>Select <strong>Web App</strong>. Set "Who has access" to <strong>Anyone</strong>.</li>
-              <li>Copy the Web App URL and paste it below.</li>
+              <li>Copy the <strong>Web App URL</strong> and paste it below.</li>
             </ol>
+            <p className="text-[9px] text-amber-600 dark:text-amber-400 font-bold bg-amber-500/10 p-2 rounded-lg mb-4">
+              Note: Every time you update the code, you MUST create a <strong>New Deployment</strong>. Clicking Save is not enough.
+            </p>
             
             <button 
               onClick={handleCopyCode}

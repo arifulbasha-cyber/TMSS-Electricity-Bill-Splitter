@@ -136,7 +136,14 @@ const AppContent: React.FC = () => {
       if (cloudTenants) { setTenants(cloudTenants); localStorage.setItem('tmss_tenants', JSON.stringify(cloudTenants)); }
       
       alert("Local data overwritten with cloud data!");
-    } catch (error) { console.error("Cloud fetch error", error); } finally { setIsInitialLoading(false); setIsSyncing(false); setTimeout(() => { isInternalChange.current = false; }, 1000); }
+    } catch (error: any) { 
+      console.error("Cloud fetch error", error);
+      alert(`Pull failed: ${error.message || "Unknown error"}`);
+    } finally { 
+      setIsInitialLoading(false); 
+      setIsSyncing(false); 
+      setTimeout(() => { isInternalChange.current = false; }, 1000); 
+    }
   }, []);
 
   const pushCloudData = useCallback(async () => {
@@ -144,16 +151,20 @@ const AppContent: React.FC = () => {
     setIsSyncing(true);
     try {
       const now = Date.now();
-      // Overwrite all cloud parts with current local data
-      await Promise.all([
-        spreadsheetService.saveDraft({ updatedAt: now, config, mainMeter, meters }),
-        spreadsheetService.saveTariff(tariffConfig),
-        spreadsheetService.saveTenants(tenants),
-        spreadsheetService.saveHistory(history)
-      ]);
+      // Push sequentially to avoid concurrent write issues on the same spreadsheet
+      await spreadsheetService.saveDraft({ updatedAt: now, config, mainMeter, meters });
+      await spreadsheetService.saveTariff(tariffConfig);
+      await spreadsheetService.saveTenants(tenants);
+      await spreadsheetService.saveHistory(history);
+      
       lastCloudSyncTimestamp.current = now;
       alert("Cloud data overwritten with local data!");
-    } catch (error) { alert("Failed to push data."); } finally { setIsSyncing(false); }
+    } catch (error: any) { 
+      console.error("Cloud push error", error);
+      alert(`Push failed: ${error.message || "Check network/script settings"}`); 
+    } finally { 
+      setIsSyncing(false); 
+    }
   }, [config, mainMeter, meters, tariffConfig, tenants, history]);
 
   useEffect(() => {
