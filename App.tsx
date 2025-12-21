@@ -246,7 +246,7 @@ const AppContent: React.FC = () => {
       case 'home': return <Dashboard config={config} result={calculationResult} mainMeter={mainMeter} />;
       case 'input': return (
           <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4">
-            <BillConfiguration config={activeConfig} onChange={handleConfigChange} tariffConfig={tariffConfig} onSaveHistory={saveToHistory} readOnly={!!viewedBill} />
+            <BillConfiguration config={activeConfig} onChange={handleConfigChange} tariffConfig={tariffConfig} onSaveHistory={saveToHistory} readOnly={!!viewedBill} totalUnits={calculationResult.totalUnits} />
             <MeterReadings mainMeter={activeMainMeter} onMainMeterUpdate={setMainMeter} readings={activeMeters} onUpdate={setMeters} tenants={tenants} onManageTenants={() => handleViewChange('tenants')} maxUnits={maxUserUnits} calculatedRate={calculationResult.calculatedRate} tariffConfig={tariffConfig} readOnly={!!viewedBill} />
           </div>
         );
